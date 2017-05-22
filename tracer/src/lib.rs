@@ -1,27 +1,27 @@
 extern crate libc;
 
 pub enum Request{
-	PtraceTraceme = 0,
+	TraceMe = 0,
+	
+
 }
 
 // perform the base request
-pub fn base_request(option: Request, pid: i32, addr: &mut i8, data: i32) -> Result<i32,i32>{
+pub fn base_request(option: Request, pid: i32, addr: &mut i8, data: i32) -> Result<i64, i64>{
 	let res;
 	unsafe{
-		res = libc::ptrace(option as i32, pid, addr, data);
+		res = libc::ptrace(option as u32, pid, addr, data);
 	}
 
 	// error handling, TODO peek user need special care
-	if res == -1{
-		Err(res)
-	}
-	else{
-		Ok(res)
+	match res {
+		-1 => Err(-1),
+		_  => Ok(res),
 	}
 }
 
 // indicate the current process should be traced by its parent
-pub fn ptrace_traceme() -> Result<i32,i32> {
+pub fn ptrace_traceme() -> Result<i64,i64> {
 	// the pid, addr and data will be ignored
 	let mut temp = 0;
 	base_request(Request::PtraceTraceme, 0, &mut temp, 0)
