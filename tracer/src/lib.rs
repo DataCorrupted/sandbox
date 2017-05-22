@@ -2,8 +2,22 @@ extern crate libc;
 
 #[derive(Debug)]
 pub struct Registers {
-	a: i32,
-	// unimplemented
+	rax: i64,
+	rbx: i64,
+	rcx: i64,
+	rdx: i64,
+	rsi: i64,
+	rdi: i64,
+	rbp: i64,
+	rsp: i64,
+	r8: i64,
+	r9: i64,
+	r10: i64,
+	r11: i64,
+	r12: i64,
+	r13: i64,
+	r14: i64,
+	r15: i64,
 }
 
 pub enum Request{
@@ -38,45 +52,41 @@ pub struct Tracee {
 	pid: libc::pid_t,
 }
 
+
 impl Tracee {
 	// new a tracee with a pid, and attach the caller to the tracee\
 	// return a result tracee(
-		pub fn new_with_pid(pid: i32) -> Result<Tracee,()>{
-			let tracee = Tracee{ pid : pid };
-			match tracee.attach(){
-				Ok(_) => Ok(tracee),
-				Err(_) => Err(), 
-			}
-	
+	pub fn new(args: &Vec<String>) -> Result<Tracee,()>{
+		unimplemented!();
+	}
+	pub fn new_with_pid(pid: i32) -> Result<Tracee, String>{
+		let tracee = Tracee{ pid : pid };
+		match tracee.attach(){
+			Ok(_) => Ok(tracee),
+			Err(_) => Err("Failed to attach.".to_string()), 
 		}
-		pub fn new(args: &Vec<String>) -> Result<Tracee,()>{
-			unimplemented!();
+	}
+	// perform the base request
+	pub fn base_request(&self, option: Request, addr: &mut i32, data: i32) -> Result<i64, i64>{
+		let res;
+		unsafe{
+			res = libc::ptrace(option as u32, self.pid, addr, data);
 		}
-		// perform the base request
-		pub fn base_request(&self, option: Request, addr: &mut i32, data: i32) -> Result<i64, i64>{
-			let res;
-			unsafe{
-				res = libc::ptrace(option as u32, self.pid, addr, data);
-			}
-	
-			// error handling, TODO peek user need special care
-			match res {
-				-1 => Err(-1),
-				_  => Ok(res),
-			}
+				// error handling, TODO peek user need special care
+		match res {
+			-1 => Err(-1),
+			_  => Ok(res),
 		}
-	
-		// indicate the current process should be traced by its parent
-		pub fn trace_me(&self) -> Result<i64,i64> {
-			// the pid, addr and data will be ignored
-			let mut temp = 0;
-			self.base_request(Request::TRACEME, &mut temp, 0)
-		}
-	
-		pub fn attach(self) -> Result<(),()>{
-			unimplemented!();
-		}
-		
+	}
+			// indicate the current process should be traced by its parent
+	pub fn trace_me(&self) -> Result<i64,i64> {
+		// the pid, addr and data will be ignored
+		let mut temp = 0;
+		self.base_request(Request::TRACEME, &mut temp, 0)
+	}
+	pub fn attach(&self) -> Result<(),()>{
+		unimplemented!();
+	}
 }
 
 
