@@ -39,32 +39,44 @@ pub struct Tracee {
 }
 
 impl Tracee {
-	pub fn new_with_pid(pid: i32) -> Result<Tracee,()>{
-		unimplemented!();
-	}
-	pub fn new(args: &Vec<String>) -> Result<Tracee,()>{
-		unimplemented!();	
-	}
-	// perform the base request
-	pub fn base_request(&self, option: Request, addr: &mut i32, data: i32) -> Result<i64, i64>{
-		let res;
-		unsafe{
-			res = libc::ptrace(option as u32, self.pid, addr, data);
+	// new a tracee with a pid, and attach the caller to the tracee\
+	// return a result tracee(
+		pub fn new_with_pid(pid: i32) -> Result<Tracee,()>{
+			let tracee = Tracee{ pid : pid };
+			match tracee.attach(){
+				Ok(_) => Ok(tracee),
+				Err(_) => Err(), 
+			}
+	
 		}
-
-		// error handling, TODO peek user need special care
-		match res {
-			-1 => Err(-1),
-			_  => Ok(res),
+		pub fn new(args: &Vec<String>) -> Result<Tracee,()>{
+			unimplemented!();
 		}
-	}
-
-	// indicate the current process should be traced by its parent
-	pub fn trace_me(&self) -> Result<i64,i64> {
-		// the pid, addr and data will be ignored
-		let mut temp = 0;
-		self.base_request(Request::TRACEME, &mut temp, 0)
-	}
+		// perform the base request
+		pub fn base_request(&self, option: Request, addr: &mut i32, data: i32) -> Result<i64, i64>{
+			let res;
+			unsafe{
+				res = libc::ptrace(option as u32, self.pid, addr, data);
+			}
+	
+			// error handling, TODO peek user need special care
+			match res {
+				-1 => Err(-1),
+				_  => Ok(res),
+			}
+		}
+	
+		// indicate the current process should be traced by its parent
+		pub fn trace_me(&self) -> Result<i64,i64> {
+			// the pid, addr and data will be ignored
+			let mut temp = 0;
+			self.base_request(Request::TRACEME, &mut temp, 0)
+		}
+	
+		pub fn attach(self) -> Result<(),()>{
+			unimplemented!();
+		}
+		
 }
 
 
