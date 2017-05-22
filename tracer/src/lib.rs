@@ -2,12 +2,34 @@ extern crate libc;
 
 #[derive(Debug)]
 pub struct Registers {
-	field: Type
+	a: i32,
+	// unimplemented
 }
 
 pub enum Request{
 	TraceMe = 0,
-
+	PEEKTEXT= 1,
+	PEEKDATA= 2,
+	PEEKUSER= 3,
+	POKETEXT= 4,
+	POKEDATA= 5,
+	POKEUSER= 6,
+	CONT= 7,
+	KILL= 8,
+	SINGLESTEP= 9,
+	ATTACH= 16,
+	DETACH= 17,
+	SYSCALL= 24,
+	SETOPTIONS= 0x4200,
+	GETEVENTMSG= 0x4201,
+	GETSIGINFO= 0x4202,
+	SETSIGINFO= 0x4203,
+	GETREGSET= 0x4204,
+	SETREGSET= 0x4205,
+	SEIZE= 0x4206,
+	INTERRUPT= 0x4207,
+	LISTEN= 0x4208,
+	PEEKSIGINFO= 0x4209,
 
 }
 
@@ -17,10 +39,10 @@ pub struct Tracee {
 }
 
 impl Tracee {
-	pub fn new(pid: i32) -> Result<Tracee>{
+	pub fn new_with_pid(pid: i32) -> Result<Tracee,()>{
 		unimplemented!();
 	}
-	pub fn new(args: &Vec<String>) -> Result<Tracee>{
+	pub fn new(args: &Vec<String>) -> Result<Tracee,()>{
 		unimplemented!();	
 	}
 	// perform the base request
