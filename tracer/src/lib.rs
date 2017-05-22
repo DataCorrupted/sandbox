@@ -7,7 +7,7 @@ pub struct Registers {
 }
 
 pub enum Request{
-	TraceMe = 0,
+	TRACEME = 0,
 	PEEKTEXT= 1,
 	PEEKDATA= 2,
 	PEEKUSER= 3,
@@ -63,7 +63,7 @@ impl Tracee {
 	pub fn trace_me(&self) -> Result<i64,i64> {
 		// the pid, addr and data will be ignored
 		let mut temp = 0;
-		self.base_request(Request::TraceMe, &mut temp, 0)
+		self.base_request(Request::TRACEME, &mut temp, 0)
 	}
 }
 
