@@ -1,4 +1,6 @@
 extern crate libc;
+use std::ffi::*;
+use libc::*;
 
 #[derive(Debug)]
 pub struct Registers {
@@ -56,8 +58,31 @@ pub struct Tracee {
 impl Tracee {
 	// new a tracee with a pid, and attach the caller to the tracee\
 	// return a result tracee(
-	pub fn new(args: &Vec<String>) -> Result<Tracee,()>{
-		unimplemented!();
+	pub fn new(args: &Vec<String>) -> Result<Tracee,&'static str>{
+		let tracee = Tracee{ pid: unsafe{ libc::fork() } };
+		if tracee.pid == 0 {
+			let cmd = args[0].clone();
+			// Convert cmd(args[0]) and args into C style,
+			let c_prog = CString::new(cmd.as_bytes()).unwrap();
+			let c_args_temp: Vec<_> = args.iter()
+						.map(|x| CString::new(x.as_bytes())
+							.unwrap()).collect();
+			let mut c_args: Vec<_> = c_args_temp.iter()
+						.map(|x| x.as_ptr()).collect();
+			c_args.push(std::ptr::null());
+			unsafe{ 
+				let _ = tracee.trace_me();
+				kill(tracee.pid, libc::SIGSTOP);
+				execvp(c_prog.as_ptr(), c_args.as_ptr()) ;
+				exit(-1);
+			};
+		} else {
+			let mut status = 0;
+			match unsafe { waitpid(tracee.pid, &mut status, libc::WNOHANG) } {
+				0 => Ok(tracee),
+				_ => Err("Tracee failed to start."),
+			}			
+		}
 	}
 	pub fn new_with_pid(pid: i32) -> Result<Tracee, String>{
 		let tracee = Tracee{ pid : pid };
