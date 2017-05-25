@@ -1,8 +1,10 @@
 extern crate libc;
 use std::ffi::*;
 use libc::*;
+use std::ops::Index;
+use std::default::Default;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Registers {
 	rax: i64,
 	rbx: i64,
@@ -33,6 +35,8 @@ pub enum Request{
 	CONT= 7,
 	KILL= 8,
 	SINGLESTEP= 9,
+	GETREGS= 12,
+	SETREGS= 13,
 	ATTACH= 16,
 	DETACH= 17,
 	SYSCALL= 24,
@@ -78,6 +82,8 @@ impl Tracee {
 			};
 		} else {
 			let mut status = 0;
+
+
 			match unsafe { wait(&mut status) } {
 				child => Ok(tracee),
 				_ => Err("Tracee failed to start."),
@@ -92,7 +98,7 @@ impl Tracee {
 		}
 	}
 	// perform the base request
-	pub fn base_request(&self, option: Request, addr: &mut i32, data: i32) -> Result<i64, i64>{
+	pub fn base_request(&self, option: Request, addr: *mut libc::c_void, data: *mut libc::c_void) -> Result<i64, i64>{
 		let res;
 		unsafe{
 			res = libc::ptrace(option as u32, self.pid, addr, data);
@@ -116,9 +122,16 @@ impl Tracee {
 		let mut temp = 0;
 		self.base_request(Request::CONT, &mut temp, 0)
 	}
+
+	pub fn take_regs(&self) -> Result<Registers, &'static str >{
+		let mut buf: Registers = Default::default();
+		let buf_ref = &mut buf;
+		match buf.base_request(Request::GETREGSET, ptr::null_mut(), buf_ref as *mut libc::c_void) {
+			Ok(_) => Ok(buf),
+			Err(e) => Err("Error"),
+		}
+	}
 }
-
-
 
 
 
