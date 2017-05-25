@@ -159,6 +159,7 @@ impl Tracee {
 						addr: *mut libc::c_void, 
 						data: *mut libc::c_void) 
 		-> Result<i64, i64>{
+			println!("base_request: option:{:?} pid:{:?}",option, self.pid );
 		let res;
 		unsafe{
 			res = libc::ptrace(option as u32, self.pid, addr, data);
