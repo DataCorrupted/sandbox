@@ -13,6 +13,7 @@ fn main() {
     	// TODO you should catch sys call here
 
     	// 
+        let _ = tracee.read_string(0);
     	match tracee.do_continue() {
     		Ok(_) => println!("Ok"),
     		Err(_) => println!("Err"),

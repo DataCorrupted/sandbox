@@ -3,7 +3,7 @@ use std::ffi::*;
 use libc::*;
 use std::default::Default;
 use std::ptr;
-
+	
 #[derive(Debug, Default)]
 pub struct Registers {
 	rax: i64,
@@ -51,7 +51,6 @@ pub enum Request{
 	INTERRUPT= 0x4207,
 	LISTEN= 0x4208,
 	PEEKSIGINFO= 0x4209,
-
 }
 
 #[derive(Debug, Clone)]
@@ -63,7 +62,7 @@ pub struct Tracee {
 impl Tracee {
 	// new a tracee with a pid, and attach the caller to the tracee\
 	// return a result tracee(
-	pub fn new(args: &Vec<String>) -> Result<Tracee,&'static str>{
+	pub fn new(args: &Vec<String>) -> Result<Tracee, &'static str>{
 		// new a child process
 		let child = unsafe{ libc::fork() };
 		let tracee = Tracee{ pid: child };
@@ -111,25 +110,53 @@ impl Tracee {
 			// indicate the current process should be traced by its parent
 	pub fn trace_me(&self) -> Result<i64,i64> {
 		// the pid, addr and data will be ignored
-		self.base_request(Request::TRACEME, ptr::null_mut(), ptr::null_mut())
+		self.base_request(Request::TRACEME, 
+							ptr::null_mut(), ptr::null_mut())
 	}
 	pub fn attach(&self) -> Result<(),()>{
 		unimplemented!();
 	}
 	pub fn do_continue(&self) -> Result<i64, i64>{
-		self.base_request(Request::CONT, ptr::null_mut(), ptr::null_mut())
+		self.base_request(Request::CONT, 
+							ptr::null_mut(), ptr::null_mut())
 	}
 
 	pub fn take_regs(&self) -> Result<Registers, &'static str >{
 		let mut buf: Registers = Default::default();
 		let buf_ref: *mut Registers = &mut buf;
-		match self.base_request(Request::GETREGSET, ptr::null_mut(), buf_ref as *mut libc::c_void) {
+		match self.base_request(Request::GETREGSET, 
+								ptr::null_mut(), buf_ref as *mut libc::c_void) {
 			Ok(_) => Ok(buf),
-			Err(_) => Err("Error"),
+			Err(_) => Err("Failed to take registers."),
 		}
 	}
-	pub fn read_string(&self, addr: u64) -> Result<String, i64>{
-		unimplemented!();
+	pub fn peek_data(&self, addr: u64) -> Result<u64, &'static str>{
+		match self.base_request(Request::PEEKDATA, 
+								addr as *mut libc::c_void, ptr::null_mut()) {
+			Ok(data) => Ok(data as u64),
+			Err(_) => Err("Failed to peek data."),
+		}
+	}
+	pub fn read_string(&self, mut addr: u64) -> Result<String, &'static str>{
+		let mut string: String = String::with_capacity(256);
+		'outter: while string.capacity() <= 256 {
+			let data;
+			match self.peek_data(addr) {
+				Ok(d) => data = d,
+				Err(e) => return Err(e),
+			};
+			let mut mask = 0xff000000;
+			for byte in 0..4 {
+				let temp: u8 = ((data & mask) >> 8 * (3 - byte)) as u8;
+				mask = mask >> 8;
+				string.push(temp as char);
+				if temp == 0 {
+					break 'outter;
+				}
+			}
+			addr += 8;
+		}
+		Ok(string)
 	}
 	// perform the base request
 	pub fn base_request(&self, 
@@ -156,19 +183,19 @@ impl Tracee {
 #[cfg(test)]
 mod tests {
 	use Tracee;
-    #[test]
-    fn it_works() {
-    }
+	#[test]
+	fn it_works() {
+	}
 
-    #[test]
-    fn call_trace_me(){
-    	let mut args = Vec::new();
-    	args.push("ls".to_string());
-    	args.push("-la".to_string());
-    	let tracee = Tracee::new(&args).unwrap();
-    	match tracee.do_continue() {
-    		Ok(_) => println!("Ok"),
-    		Err(_) => println!("Err"),
-    	};
-    } 
+	#[test]
+	fn call_trace_me(){
+		let mut args = Vec::new();
+		args.push("ls".to_string());
+		args.push("-la".to_string());
+		let tracee = Tracee::new(&args).unwrap();
+		match tracee.do_continue() {
+			Ok(_) => println!("Ok"),
+			Err(_) => println!("Err"),
+		};
+	} 
 }
