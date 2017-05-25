@@ -110,6 +110,8 @@ impl Tracee {
 	pub fn attach(&self) -> Result<(),()>{
 		unimplemented!();
 	}
+
+	// continue execution and stop the tracee on the entry of the next syscall
 	pub fn do_continue(&self) -> Result<i64, i64>{
 		let temp = 0;
 		self.base_request(Request::SYSCALL, 
