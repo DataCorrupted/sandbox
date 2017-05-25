@@ -101,7 +101,7 @@ impl Tracee {
 					
 		}
 	}
-	pub fn new_with_pid(pid: i32) -> Result<Tracee, String>{
+	pub fn from(pid: i32) -> Result<Tracee, String>{
 		let tracee = Tracee{ pid : pid };
 		match tracee.attach(){
 			Ok(_) => Ok(tracee),
@@ -128,6 +128,7 @@ impl Tracee {
 			Err(_) => Err("Error"),
 		}
 	}
+	pub fn read_string(&self, addr: u64) -> Result<>
 	// perform the base request
 	pub fn base_request(&self, 
 						option: Request, 
