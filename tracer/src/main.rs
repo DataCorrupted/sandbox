@@ -1,4 +1,5 @@
 extern crate tracer;
+extern crate libc;
 
 // expected ouput
 
@@ -10,11 +11,21 @@ fn main() {
     	args.push("-la".to_string());
     	let tracee = tracer::Tracee::new(&args).unwrap();
 
+    	// the first sys call should be execvp
+    	// the main program shoudl get execvp CONT first, wait first
+
     	// TODO you should catch sys call here
+        let mut status = 0;
+        unsafe { libc::wait(&mut status); }
+
 
     	// 
     	match tracee.do_continue() {
     		Ok(_) => println!("Ok"),
     		Err(_) => println!("Err"),
     	};
+
+        loop {
+            
+        }
 }
