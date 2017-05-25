@@ -20,6 +20,7 @@ fn main() {
 
 
     	// 
+        let _ = tracee.read_string(0);
     	match tracee.do_continue() {
     		Ok(_) => println!("Ok"),
     		Err(_) => println!("Err"),
