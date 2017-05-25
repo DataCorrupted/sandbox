@@ -6,22 +6,22 @@ use std::ptr;
 	
 #[derive(Debug, Default)]
 pub struct Registers {
-	rax: i64,
-	rbx: i64,
-	rcx: i64,
-	rdx: i64,
-	rsi: i64,
-	rdi: i64,
-	rbp: i64,
-	rsp: i64,
-	r8: i64,
-	r9: i64,
-	r10: i64,
-	r11: i64,
-	r12: i64,
-	r13: i64,
-	r14: i64,
-	r15: i64,
+	pub rax: i64,
+	pub rbx: i64,
+	pub rcx: i64,
+	pub rdx: i64,
+	pub rsi: i64,
+	pub rdi: i64,
+	pub rbp: i64,
+	pub rsp: i64,
+	pub r8: i64,
+	pub r9: i64,
+	pub r10: i64,
+	pub r11: i64,
+	pub r12: i64,
+	pub r13: i64,
+	pub r14: i64,
+	pub r15: i64,
 }
 
 #[derive(Debug)]
@@ -169,27 +169,4 @@ impl Tracee {
 		}
 	}
 
-}
-
-
-
-
-#[cfg(test)]
-mod tests {
-	use Tracee;
-	#[test]
-	fn it_works() {
-	}
-
-	#[test]
-	fn call_trace_me(){
-		let mut args = Vec::new();
-		args.push("ls".to_string());
-		args.push("-la".to_string());
-		let tracee = Tracee::new(&args).unwrap();
-		match tracee.do_continue() {
-			Ok(_) => println!("Ok"),
-			Err(_) => println!("Err"),
-		};
-	} 
 }
