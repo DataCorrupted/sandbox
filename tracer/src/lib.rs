@@ -4,7 +4,7 @@ use libc::*;
 use std::default::Default;
 use std::ptr;
 	
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Registers {
 	pub rax: i64,
 	pub rbx: i64,
@@ -22,6 +22,11 @@ pub struct Registers {
 	pub r13: i64,
 	pub r14: i64,
 	pub r15: i64,
+}
+
+struct Iovec<'a> {
+    iov_base: &'a Registers,
+    iov_len: u32,
 }
 
 #[derive(Debug)]
@@ -119,11 +124,18 @@ impl Tracee {
 	}
 
 	pub fn take_regs(&self) -> Result<Registers, &'static str >{
-		let mut buf: Registers = Default::default();
-		let buf_ref: *mut Registers = &mut buf;
+		//let mut registers: Registers = Default::default();
+		//let registers_ref: *mut Registers = &mut registers;
+		let mut registers: Registers = Default::default();
+//		let registers_ref: *mut Registers = &mut registers;
+		let mut iovec: Iovec = 
+			Iovec{ iov_base: &registers,
+			  	   iov_len: 16 };
+		let iovec_ref: *mut Iovec = &mut iovec;
+		let mode = 1;
 		match self.base_request(Request::GETREGSET, 
-								ptr::null_mut(), buf_ref as *mut libc::c_void) {
-			Ok(_) => Ok(buf),
+								mode as *mut libc::c_void, iovec_ref as *mut libc::c_void) {
+			Ok(_) => Ok(registers.clone()),
 			Err(_) => Err("Failed to take registers."),
 		}
 	}
@@ -161,7 +173,7 @@ impl Tracee {
 						addr: *mut libc::c_void, 
 						data: *mut libc::c_void) 
 		-> Result<i64, i64>{
-			println!("base_request: option:{:?} pid:{:?}",option, self.pid );
+			println!("option:{:?}",option);
 		let res;
 		unsafe{
 			res = libc::ptrace(option as u32, self.pid, addr, data);
