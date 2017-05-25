@@ -110,7 +110,11 @@ impl Tracee {
 		}
 	}
 	// perform the base request
-	pub fn base_request(&self, option: Request, addr: *mut libc::c_void, data: *mut libc::c_void) -> Result<i64, i64>{
+	pub fn base_request(&self, 
+						option: Request, 
+						addr: *mut libc::c_void, 
+						data: *mut libc::c_void) 
+	-> Result<i64, i64>{
 		let res;
 		unsafe{
 			res = libc::ptrace(option as u32, self.pid, addr, data);
@@ -124,15 +128,13 @@ impl Tracee {
 			// indicate the current process should be traced by its parent
 	pub fn trace_me(&self) -> Result<i64,i64> {
 		// the pid, addr and data will be ignored
-		let mut temp = 0;
-		self.base_request(Request::TRACEME, &mut temp, 0)
+		self.base_request(Request::TRACEME, ptr::null_mut(), ptr::null_mut())
 	}
 	pub fn attach(&self) -> Result<(),()>{
 		unimplemented!();
 	}
 	pub fn do_continue(&self) -> Result<i64, i64>{
-		let mut temp = 0;
-		self.base_request(Request::CONT, &mut temp, 0)
+		self.base_request(Request::CONT, ptr::null_mut(), ptr::null_mut())
 	}
 
 	pub fn take_regs(&self) -> Result<Registers, &'static str >{
