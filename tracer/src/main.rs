@@ -21,7 +21,7 @@ fn main() {
 			//let registers = tracee.take_regs().unwrap();
 			//println!("{}", registers.rax);
 			match tracee.do_continue() {
-				Ok(_) => println!("Ok"),
+				Ok(_) => {;},
 				Err(_) => break,
 			};
 		}

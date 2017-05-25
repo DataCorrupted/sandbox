@@ -111,8 +111,8 @@ impl Tracee {
 		unimplemented!();
 	}
 	pub fn do_continue(&self) -> Result<i64, i64>{
-		let mut temp = 9;
-		self.base_request(Request::CONT, 
+		let temp = 0;
+		self.base_request(Request::SYSCALL, 
 							ptr::null_mut(), temp as *mut libc::c_void)
 	}
 
