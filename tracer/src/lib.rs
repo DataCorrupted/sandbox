@@ -128,7 +128,9 @@ impl Tracee {
 			Err(_) => Err("Error"),
 		}
 	}
-	pub fn read_string(&self, addr: u64) -> Result<>
+	pub fn read_string(&self, addr: u64) -> Result<String, i64>{
+		unimplemented!();
+	}
 	// perform the base request
 	pub fn base_request(&self, 
 						option: Request, 
