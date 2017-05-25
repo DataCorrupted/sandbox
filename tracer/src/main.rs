@@ -18,8 +18,8 @@ fn main() {
 		let mut status = 0;
 		loop {
 			unsafe { libc::wait(&mut status); }
-			let registers = tracee.take_regs().unwrap();
-			println!("{}", registers.rax);
+			//let registers = tracee.take_regs().unwrap();
+			//println!("{}", registers.rax);
 			match tracee.do_continue() {
 				Ok(_) => println!("Ok"),
 				Err(_) => break,
