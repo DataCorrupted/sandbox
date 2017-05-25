@@ -71,14 +71,14 @@ impl Tracee {
 						.map(|x| x.as_ptr()).collect();
 			c_args.push(std::ptr::null());
 			unsafe{ 
-				let _ = tracee.trace_me();
+				let _ = tracee.trace_me().unwrap();
 				kill(tracee.pid, libc::SIGSTOP);
 				execvp(c_prog.as_ptr(), c_args.as_ptr()) ;
 				exit(-1);
 			};
 		} else {
 			let mut status = 0;
-			match unsafe { waitpid(tracee.pid, &mut status, libc::WNOHANG) } {
+			match unsafe { wait(&mut status) } {
 				0 => Ok(tracee),
 				_ => Err("Tracee failed to start."),
 			}			
@@ -112,6 +112,10 @@ impl Tracee {
 	pub fn attach(&self) -> Result<(),()>{
 		unimplemented!();
 	}
+	pub fn do_continue(&self) -> Result<i64, i64>{
+		let mut temp = 0;
+		self.base_request(Request::CONT, &mut temp, 0)
+	}
 }
 
 
@@ -121,11 +125,20 @@ impl Tracee {
 
 #[cfg(test)]
 mod tests {
+	use Tracee;
     #[test]
     fn it_works() {
     }
 
+    #[test]
     fn call_trace_me(){
-
+    	let mut args = Vec::new();
+    	args.push("ls".to_string());
+    	args.push("-la".to_string());
+    	let tracee = Tracee::new(&args);
+//    	match tracee.do_continue() {
+  //  		Ok(_) => println!("Ok"),
+    //		Err(_) => println!("Err"),
+    //	};
     }
 }
