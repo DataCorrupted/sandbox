@@ -59,7 +59,8 @@ impl Tracee {
 	// new a tracee with a pid, and attach the caller to the tracee\
 	// return a result tracee(
 	pub fn new(args: &Vec<String>) -> Result<Tracee,&'static str>{
-		let tracee = Tracee{ pid: unsafe{ libc::fork() } };
+		let child = unsafe{ libc::fork() };
+		let tracee = Tracee{ pid: child };
 		if tracee.pid == 0 {
 			let cmd = args[0].clone();
 			// Convert cmd(args[0]) and args into C style,
@@ -72,14 +73,13 @@ impl Tracee {
 			c_args.push(std::ptr::null());
 			unsafe{ 
 				let _ = tracee.trace_me().unwrap();
-				kill(tracee.pid, libc::SIGSTOP);
 				execvp(c_prog.as_ptr(), c_args.as_ptr()) ;
 				exit(-1);
 			};
 		} else {
 			let mut status = 0;
 			match unsafe { wait(&mut status) } {
-				0 => Ok(tracee),
+				child => Ok(tracee),
 				_ => Err("Tracee failed to start."),
 			}			
 		}
@@ -133,12 +133,12 @@ mod tests {
     #[test]
     fn call_trace_me(){
     	let mut args = Vec::new();
-    	args.push("ls".to_string());
+    	args.push("l".to_string());
     	args.push("-la".to_string());
-    	let tracee = Tracee::new(&args);
-//    	match tracee.do_continue() {
-  //  		Ok(_) => println!("Ok"),
-    //		Err(_) => println!("Err"),
-    //	};
-    }
+    	let tracee = Tracee::new(&args).unwrap();
+    	match tracee.do_continue() {
+    		Ok(_) => println!("Ok"),
+    		Err(_) => println!("Err"),
+    	};
+    } 
 }
