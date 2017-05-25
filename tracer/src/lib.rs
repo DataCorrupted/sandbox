@@ -98,7 +98,7 @@ impl Tracee {
 		let tracee = Tracee{ pid : pid };
 		match tracee.attach(){
 			Ok(_) => Ok(tracee),
-			Err(_) => Err("Failed to attach.".to_string()), 
+			Err(_) => Err("tracer: failed to attach.".to_string()), 
 		}
 	}
 			// indicate the current process should be traced by its parent
@@ -107,8 +107,19 @@ impl Tracee {
 		self.base_request(Request::TRACEME, 
 							ptr::null_mut(), ptr::null_mut())
 	}
-	pub fn attach(&self) -> Result<(),()>{
-		unimplemented!();
+
+	// the caller should use waitpid to wait for syscall from traccee
+	pub fn attach(&self) -> Result<i64,String>{
+		let res = self.base_request(Request::ATTACH,ptr::null_mut(), ptr::null_mut());
+		match res{
+			Ok(some) => return Ok(some),
+			_ => return Err("tracer: failed to attach tracee".to_string()),
+		}
+	}
+
+	// detach the process and send PTRACE_CONT
+	pub fn detach(&self) -> Result<i64,i64>{
+		self.base_request(Request::DETACH,ptr::null_mut(), ptr::null_mut())
 	}
 
 	// continue execution and stop the tracee on the entry of the next syscall
