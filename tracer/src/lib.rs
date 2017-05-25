@@ -22,6 +22,7 @@ pub struct Registers {
 	r15: i64,
 }
 
+#[derive(Debug)]
 pub enum Request{
 	TRACEME = 0,
 	PEEKTEXT= 1,
@@ -59,9 +60,12 @@ impl Tracee {
 	// new a tracee with a pid, and attach the caller to the tracee\
 	// return a result tracee(
 	pub fn new(args: &Vec<String>) -> Result<Tracee,&'static str>{
+		// new a child process
 		let child = unsafe{ libc::fork() };
 		let tracee = Tracee{ pid: child };
-		if tracee.pid == 0 {
+		println!("Parent check");
+		if tracee.pid == 0 {				// child
+			println!("check point_1");
 			let cmd = args[0].clone();
 			// Convert cmd(args[0]) and args into C style,
 			let c_prog = CString::new(cmd.as_bytes()).unwrap();
@@ -72,16 +76,26 @@ impl Tracee {
 						.map(|x| x.as_ptr()).collect();
 			c_args.push(std::ptr::null());
 			unsafe{ 
+				println!("Are you here");
 				let _ = tracee.trace_me().unwrap();
 				execvp(c_prog.as_ptr(), c_args.as_ptr()) ;
+				panic!("{:?}","tracer: child failed to run execvp" );
 				exit(-1);
 			};
 		} else {
+			// wait for execvp and do_continue
 			let mut status = 0;
-			match unsafe { wait(&mut status) } {
-				child => Ok(tracee),
-				_ => Err("Tracee failed to start."),
-			}			
+			unsafe{ wait(&mut status); }
+			match tracee.do_continue(){
+				Ok(_) => {
+					return Ok(tracee);
+				}
+				_ => {
+					// if the base request failed to send cont, output failed
+					return Err("tracer: failed to run child process");
+				}
+			}
+					
 		}
 	}
 	pub fn new_with_pid(pid: i32) -> Result<Tracee, String>{
@@ -93,6 +107,7 @@ impl Tracee {
 	}
 	// perform the base request
 	pub fn base_request(&self, option: Request, addr: &mut i32, data: i32) -> Result<i64, i64>{
+		println!("base_request: option:{:?} addr:{:?} data:{:?} pid:{:?}",option,addr,data,self.pid );
 		let res;
 		unsafe{
 			res = libc::ptrace(option as u32, self.pid, addr, data);
@@ -133,7 +148,7 @@ mod tests {
     #[test]
     fn call_trace_me(){
     	let mut args = Vec::new();
-    	args.push("l".to_string());
+    	args.push("ls".to_string());
     	args.push("-la".to_string());
     	let tracee = Tracee::new(&args).unwrap();
     	match tracee.do_continue() {
