@@ -1,8 +1,8 @@
 extern crate libc;
 use std::ffi::*;
 use libc::*;
-use std::ops::Index;
 use std::default::Default;
+use std::ptr;
 
 #[derive(Debug, Default)]
 pub struct Registers {
@@ -84,7 +84,6 @@ impl Tracee {
 				let _ = tracee.trace_me().unwrap();
 				execvp(c_prog.as_ptr(), c_args.as_ptr()) ;
 				panic!("{:?}","tracer: child failed to run execvp" );
-				exit(-1);
 			};
 		} else {
 			// wait for execvp and do_continue
@@ -109,22 +108,6 @@ impl Tracee {
 			Err(_) => Err("Failed to attach.".to_string()), 
 		}
 	}
-	// perform the base request
-	pub fn base_request(&self, 
-						option: Request, 
-						addr: *mut libc::c_void, 
-						data: *mut libc::c_void) 
-	-> Result<i64, i64>{
-		let res;
-		unsafe{
-			res = libc::ptrace(option as u32, self.pid, addr, data);
-		}
-				// error handling, TODO peek user need special care
-		match res {
-			-1 => Err(-1),
-			_  => Ok(res),
-		}
-	}
 			// indicate the current process should be traced by its parent
 	pub fn trace_me(&self) -> Result<i64,i64> {
 		// the pid, addr and data will be ignored
@@ -139,12 +122,29 @@ impl Tracee {
 
 	pub fn take_regs(&self) -> Result<Registers, &'static str >{
 		let mut buf: Registers = Default::default();
-		let buf_ref = &mut buf;
-		match buf.base_request(Request::GETREGSET, ptr::null_mut(), buf_ref as *mut libc::c_void) {
+		let buf_ref: *mut Registers = &mut buf;
+		match self.base_request(Request::GETREGSET, ptr::null_mut(), buf_ref as *mut libc::c_void) {
 			Ok(_) => Ok(buf),
-			Err(e) => Err("Error"),
+			Err(_) => Err("Error"),
 		}
 	}
+	// perform the base request
+	pub fn base_request(&self, 
+						option: Request, 
+						addr: *mut libc::c_void, 
+						data: *mut libc::c_void) 
+		-> Result<i64, i64>{
+		let res;
+		unsafe{
+			res = libc::ptrace(option as u32, self.pid, addr, data);
+		}
+				// error handling, TODO peek user need special care
+		match res {
+			-1 => Err(-1),
+			_  => Ok(res),
+		}
+	}
+
 }
 
 
