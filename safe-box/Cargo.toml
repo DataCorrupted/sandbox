@@ -1,0 +1,6 @@
+[package]
+name = "safe-box"
+version = "0.1.0"
+authors = ["jianxiong Cai <caijx@shanghaitech.edu.cn>"]
+
+[dependencies]
