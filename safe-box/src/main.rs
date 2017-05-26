@@ -1,4 +1,6 @@
+extern crate tracer;
 use std::env;
+
 
 fn main() {
 	// read arguments from argvs and turn it into a vec
@@ -17,4 +19,5 @@ fn main() {
 	// if the child make a fork, the box also fork a process to trace the process forked by child
 
 	// break the loop when the child exit
+
 }

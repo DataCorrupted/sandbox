@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["jianxiong Cai <caijx@shanghaitech.edu.cn>"]
 
 [dependencies]
+libc = "0.2.23"
+tracer = {path = "/home/ernest/Desktop/sandbox/tracer"}
