@@ -6,29 +6,65 @@ use std::ptr;
 	
 #[derive(Debug, Default, Clone)]
 pub struct Registers {
-	pub rax: i64,
-	pub rbx: i64,
-	pub rcx: i64,
-	pub rdx: i64,
-	pub rsi: i64,
-	pub rdi: i64,
-	pub rbp: i64,
-	pub rsp: i64,
-	pub r8: i64,
-	pub r9: i64,
-	pub r10: i64,
-	pub r11: i64,
-	pub r12: i64,
-	pub r13: i64,
-	pub r14: i64,
-	pub r15: i64,
+	pub r15: u64,
+	pub r14: u64,
+	pub r13: u64,
+	pub r12: u64,
+	pub rbp: u64,
+	pub rbx: u64,
+	pub r11: u64,
+	pub r10: u64,
+	pub r9: u64,
+	pub r8: u64,
+	pub rax: u64,
+	pub rcx: u64,
+	pub rdx: u64,
+	pub rsi: u64,
+	pub rdi: u64,
+	pub orig_rax: u64,
+	pub rip: u64,
+	pub cs: u64,
+	pub eflags: u64,
+	pub rsp: u64,
+	pub ss: u64,
+	pub fs_base: u64,
+	pub gs_base: u64,
+	pub ds: u64,
+	pub es: u64,
+	pub fs: u64,
+	pub gs: u64,
 }
 
-struct Iovec<'a> {
-    iov_base: &'a Registers,
-    iov_len: u32,
+#[derive(Debug)]
+pub enum Register{
+	R15 = 0,
+	R14 = 1,
+	R13 = 2,
+	R12 = 3,
+	RBP = 4,
+	RBX = 5,
+	R11 = 6,
+	R10 = 7,
+	R9 = 8,
+	R8 = 9,
+	RAX = 10,
+	RCX = 11,
+	RDX = 12,
+	RSI = 13,
+	RDI = 14,
+	ORIGRAX = 15,
+	RIP = 16,
+	CS = 17,
+	EFLAGS = 18,
+	RSP = 19,
+	SS = 20,
+	FSBASE = 21,
+	GSBASE = 22,
+	DS = 23,
+	ES = 24,
+	FS = 25,
+	GS = 26,
 }
-
 #[derive(Debug)]
 pub enum Request{
 	TRACEME = 0,
@@ -134,21 +170,24 @@ impl Tracee {
 							ptr::null_mut(), temp as *mut libc::c_void)
 	}
 
+	pub fn take_reg(&self, reg: u64) -> Result<u64, &'static str> {
+		let addr = 8 * reg;
+		match self.base_request(Request::PEEKUSER,
+								addr as *mut libc::c_void,
+								ptr::null_mut()) {
+			Ok(memory) => Ok(memory as u64),
+			Err(_) => Err("Failed to take one register."),
+		}
+	}
 	pub fn take_regs(&self) -> Result<Registers, &'static str >{
-		//let mut registers: Registers = Default::default();
-		//let registers_ref: *mut Registers = &mut registers;
 		let mut registers: Registers = Default::default();
-//		let registers_ref: *mut Registers = &mut registers;
-		let mut iovec: Iovec = 
-			Iovec{ iov_base: &registers,
-			  	   iov_len: 16 };
-		let iovec_ref: *mut Iovec = &mut iovec;
-		let mode = 1;
-		match self.base_request(Request::GETREGSET, 
-								mode as *mut libc::c_void, iovec_ref as *mut libc::c_void) {
+		let registers_ref: *mut Registers = &mut registers;
+		match self.base_request(Request::GETREGS, 
+								ptr::null_mut(), 
+								registers_ref as *mut libc::c_void) {
 			Ok(_) => Ok(registers.clone()),
 			Err(_) => Err("Failed to take registers."),
-		}
+		}		
 	}
 	pub fn peek_data(&self, addr: u64) -> Result<u64, &'static str>{
 		match self.base_request(Request::PEEKDATA, 
@@ -165,14 +204,14 @@ impl Tracee {
 				Ok(d) => data = d,
 				Err(e) => return Err(e),
 			};
-			let mut mask = 0xff000000;
-			for byte in 0..4 {
-				let temp: u8 = ((data & mask) >> 8 * (3 - byte)) as u8;
-				mask = mask >> 8;
-				string.push(temp as char);
+			let mut mask = 0xff;
+			for byte in 0..8 {
+				let temp: u8 = ((data & mask) >> 8 * byte) as u8;
+				mask = mask << 8;
 				if temp == 0 {
 					break 'outter;
 				}
+				string.push(temp as char);
 			}
 			addr += 8;
 		}
@@ -184,7 +223,7 @@ impl Tracee {
 						addr: *mut libc::c_void, 
 						data: *mut libc::c_void) 
 		-> Result<i64, i64>{
-			println!("option:{:?}",option);
+		//println!("option:{:?}",option);
 		let res;
 		unsafe{
 			res = libc::ptrace(option as u32, self.pid, addr, data);

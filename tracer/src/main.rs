@@ -1,6 +1,7 @@
 extern crate tracer;
 extern crate libc;
 
+use tracer::Register;
 // expected ouput
 
 // when running the case, test shoudl print ...
@@ -18,11 +19,16 @@ fn main() {
 		let mut status = 0;
 		loop {
 			unsafe { libc::wait(&mut status); }
-			//let registers = tracee.take_regs().unwrap();
-			//println!("{}", registers.rax);
+			let registers = tracee.take_regs().unwrap();
+			if registers.orig_rax == 2 {
+				//println!("{:?}", registers);
+				let arg0 = tracee.read_string(registers.rdi).unwrap();
+				println!("{}", arg0);
+			}
 			match tracee.do_continue() {
 				Ok(_) => {;},
 				Err(_) => break,
 			};
+			
 		}
 }
