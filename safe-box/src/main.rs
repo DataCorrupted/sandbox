@@ -11,15 +11,23 @@ fn safe_wait(){
 }
 
 // return true if the process is still alive
-fn check_process() -> bool{
-	unimplemented!();
+fn check_process(tracee: &tracer::Tracee) -> bool{
+	let mut status = 0;
+	let a;
+
+	unsafe{
+		a = libc::waitpid(tracee.take_pid(), &mut status, libc::WNOHANG);
+	}
+
+	if a==0{return true;}
+	else{return false;}
 }
 
 fn main() {
 	// read arguments from argvs and turn it into a vec
 	let mut argvs = Vec::new();
 	let mut argvs_raw = env::args();
-	if (argvs_raw.len() < 2){
+	if  argvs_raw.len() < 2  {
 		println!("{:}", "[Error] safe-box: usage error");
 		return ;
 	}
@@ -31,12 +39,14 @@ fn main() {
 	let tracee = tracer::Tracee::new(&argvs).unwrap();
 
 	// wait for execvp and start the tracee
-	safe_wait();
-	tracee.do_continue();
+	// safe_wait();
+	// tracee.do_continue();
 	
 	// test only
+	let mut i = 0;
 	loop {
 		safe_wait();
+		if !check_process(&tracee) { break; }
 		tracee.do_continue();
 	}
 

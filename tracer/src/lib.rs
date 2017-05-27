@@ -281,4 +281,14 @@ impl Tracee {
 		}
 	}
 
+	// get the syscall number of tracee when it stop
+	pub fn get_syscall(&self) -> Result<u64,String>{
+		let regs = self.take_regs();			// take the registers
+		match regs {
+			// orig_rax store the syscall
+			Ok(temp) => Ok(temp.orig_rax),
+			_ => Err("Failed to get syscall".to_string()),
+		}
+	}
+
 }
