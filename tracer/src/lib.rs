@@ -101,7 +101,8 @@ pub struct Tracee {
 
 
 impl Tracee {
-	// new a tracee with a pid, and attach the caller to the tracee
+
+	// create a tracee with a pid, and attach the caller to the tracee
 	// return a result tracee on succeeding in creating a process, return Err on failure
 	// Note: when the function return the caller should wait for an execvp signal first
 	pub fn new(args: &Vec<String>) -> Result<Tracee,&'static str>{
@@ -111,8 +112,8 @@ impl Tracee {
 		// if succes, child process run trace_me
 		match tracee.pid{
 			-1 => {							// failed to fork
-				return Err("tracer: failed to fork a child process");
-			}
+				Err("tracer: failed to fork a child process")
+			},
 			0 => {							// child
 				let cmd = args[0].clone();
 				// Convert cmd(args[0]) and args into C style,
@@ -128,13 +129,23 @@ impl Tracee {
 					execvp(c_prog.as_ptr(), c_args.as_ptr()) ;				// run execvp
 					panic!("{:?}","tracer: child failed to run execvp" );
 				};
-			}
-			_ =>{							// parent
+			},
+			_ =>{
 				// parent return the tracee
 				Ok(tracee)
-			}
+			},
 		}
 	}
+
+	// take process's pid.
+	// we did so instead of pub pid just to prevent the user from messing pid around.
+	// such deed bans user from changing pid.
+	pub fn take_pid(&self) -> pid_t {
+		self.pid
+	}
+
+	// yet another way to tracee a process with given pid.
+	// It is not recommended.
 	pub fn from(pid: i32) -> Result<Tracee, String>{
 		let tracee = Tracee{ pid : pid };
 		match tracee.attach(){
@@ -142,7 +153,9 @@ impl Tracee {
 			Err(_) => Err("tracer: failed to attach.".to_string()), 
 		}
 	}
-			// indicate the current process should be traced by its parent
+	
+	// tell the parent that the current process should be traced.
+	// Only used by child.
 	pub fn trace_me(&self) -> Result<i64,i64> {
 		// the pid, addr and data will be ignored
 		self.base_request(Request::TRACEME, 
@@ -170,6 +183,8 @@ impl Tracee {
 							ptr::null_mut(), temp as *mut libc::c_void)
 	}
 
+	// Take a certain registers from register file. 
+	// The register is specified by it number, which is defined by Register.
 	pub fn take_reg(&self, reg: u64) -> Result<u64, &'static str> {
 		let addr = 8 * reg;
 		match self.base_request(Request::PEEKUSER,
@@ -179,6 +194,8 @@ impl Tracee {
 			Err(_) => Err("Failed to take one register."),
 		}
 	}
+
+	// Take the whole register file and return a Registers type.
 	pub fn take_regs(&self) -> Result<Registers, &'static str >{
 		let mut registers: Registers = Default::default();
 		let registers_ref: *mut Registers = &mut registers;
@@ -189,6 +206,10 @@ impl Tracee {
 			Err(_) => Err("Failed to take registers."),
 		}		
 	}
+
+	// Given child's address, this will take that data out. 
+	// It's not often to directly use it, 
+	// since signle data are more likely to be in the register file.
 	pub fn peek_data(&self, addr: u64) -> Result<u64, &'static str>{
 		match self.base_request(Request::PEEKDATA, 
 								addr as *mut libc::c_void, ptr::null_mut()) {
@@ -196,9 +217,12 @@ impl Tracee {
 			Err(_) => Err("Failed to peek data."),
 		}
 	}
+
+	// Given start position, read the whole string.
+	// By default it will read a string as long as 256 byte.
 	pub fn read_string(&self, mut addr: u64) -> Result<String, &'static str>{
 		let mut string: String = String::with_capacity(256);
-		'outter: while string.capacity() <= 256 {
+		'outter: loop {
 			let data;
 			match self.peek_data(addr) {
 				Ok(d) => data = d,
@@ -214,6 +238,9 @@ impl Tracee {
 				string.push(temp as char);
 			}
 			addr += 8;
+			if string.len() == 256 {
+				return Err("Too long a string.")
+			}
 		}
 		Ok(string)
 	}
@@ -223,7 +250,6 @@ impl Tracee {
 						addr: *mut libc::c_void, 
 						data: *mut libc::c_void) 
 		-> Result<i64, i64>{
-		//println!("option:{:?}",option);
 		let res;
 		unsafe{
 			res = libc::ptrace(option as u32, self.pid, addr, data);
