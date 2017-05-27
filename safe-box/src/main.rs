@@ -10,6 +10,11 @@ fn safe_wait(){
 	}
 }
 
+// return true if the process is still alive
+fn check_process() -> bool{
+	unimplemented!();
+}
+
 fn main() {
 	// read arguments from argvs and turn it into a vec
 	let mut argvs = Vec::new();
@@ -22,12 +27,12 @@ fn main() {
 		argvs.push(x);
 	}
 
-	println!("{:?}", argvs );
-
 	// create a new tracee
 	let tracee = tracer::Tracee::new(&argvs).unwrap();
 
 	// wait for execvp and start the tracee
+	safe_wait();
+	tracee.do_continue();
 	
 	// test only
 	loop {
