@@ -1,6 +1,7 @@
 extern crate tracer;
 extern crate libc;
 use std::env;
+use std::io::Write;
 
 // retrun when one of the child called syscall
 fn safe_wait(){
@@ -16,19 +17,18 @@ fn check_process(tracee: &tracer::Tracee) -> bool{
 	let a;
 
 	unsafe{
-		a = libc::waitpid(tracee.take_pid(), &mut status, libc::WNOHANG);
+		a = libc::waitpid(tracee.take_pid(), &mut status, libc::WNOHANG)
 	}
 
-	if a==0{return true;}
-	else{return false;}
+	return a==0;
 }
 
 fn main() {
 	// read arguments from argvs and turn it into a vec
 	let mut argvs = Vec::new();
-	let mut argvs_raw = env::args();
+	let argvs_raw = env::args();
 	if  argvs_raw.len() < 2  {
-		println!("{:}", "[Error] safe-box: usage error");
+		let _ = writeln!(&mut std::io::stderr(), "[Error] safe-box: usage error");
 		return ;
 	}
 	for x in argvs_raw.skip(1){
@@ -43,11 +43,10 @@ fn main() {
 	// tracee.do_continue();
 	
 	// test only
-	let mut i = 0;
 	loop {
 		safe_wait();
 		if !check_process(&tracee) { break; }
-		tracee.do_continue();
+		let _ = tracee.do_continue();
 	}
 
 
