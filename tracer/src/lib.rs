@@ -221,22 +221,28 @@ impl Tracee {
 	// Given start position, read the whole string.
 	// By default it will read a string as long as 256 byte.
 	pub fn read_string(&self, mut addr: u64) -> Result<String, &'static str>{
+		// by default 256 bytes can be read . 
+		// we want to use default argument, but it's still not possible in rust 1.0.
 		let mut string: String = String::with_capacity(256);
 		'outter: loop {
 			let data;
+			// peek that data out first.
 			match self.peek_data(addr) {
 				Ok(d) => data = d,
 				Err(e) => return Err(e),
 			};
+			// and do the parsing by 0xff mask (one byte).
 			let mut mask = 0xff;
 			for byte in 0..8 {
 				let temp: u8 = ((data & mask) >> 8 * byte) as u8;
+				// the mask will also shift.
 				mask = mask << 8;
 				if temp == 0 {
 					break 'outter;
 				}
 				string.push(temp as char);
 			}
+			// next block in memory.
 			addr += 8;
 			if string.len() == 256 {
 				return Err("Too long a string.")
