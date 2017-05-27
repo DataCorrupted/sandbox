@@ -221,7 +221,7 @@ impl Tracee {
 	// Given start position, read the whole string.
 	// By default it will read a string as long as 256 byte.
 	pub fn read_string(&self, mut addr: u64) -> Result<String, &'static str>{
-		let mut string: String = String::with_capacity(cap);
+		let mut string: String = String::with_capacity(256);
 		'outter: loop {
 			let data;
 			match self.peek_data(addr) {
