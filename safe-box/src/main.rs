@@ -39,21 +39,25 @@ fn main() {
 	let tracee = tracer::Tracee::new(&argvs).unwrap();
 
 	// wait for execvp and start the tracee
-	// safe_wait();
-	// tracee.do_continue();
+	safe_wait();
+	tracee.do_continue();
 	
-	// test only
+	// wait for every sys call the tracee make and then determine whether the syscall is valid 
+	// TODO if the child make a fork, the box also fork a process to trace the process forked by child
+	let mut last_syscall = -1;
 	loop {
 		safe_wait();
-		if !check_process(&tracee) { break; }
+		if !check_process(&tracee) { break; }		// break the loop when the child exit, handle the sys call
+		let call_num = tracee.get_syscall().unwrap();
+		match call_num{
+			// TODO, implement the map
+			0 => {},
+			1 => {},
+			_ => {},
+		}
+		// record the syscall before continue
+		last_syscall = call_num;
 		let _ = tracee.do_continue();
 	}
-
-
-	// the following things is in a while loop
-	// wait for every sys call the tracee make and then determine whether the syscall is valid 
-	// if the child make a fork, the box also fork a process to trace the process forked by child
-
-	// break the loop when the child exit
 
 }
