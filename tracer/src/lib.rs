@@ -250,6 +250,14 @@ impl Tracee {
 		}
 		Ok(string)
 	}
+
+	pub fn reject(&self) {
+		unsafe{ kill(self.pid, libc::SIGTERM); }
+	}
+	pub fn kill(&self) {
+		unsafe{ kill(self.pid, libc::SIGTERM); }
+	}
+	
 	// perform the base request
 	pub fn base_request(&self, 
 						option: Request, 
