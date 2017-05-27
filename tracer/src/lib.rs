@@ -245,7 +245,7 @@ impl Tracee {
 				mask = mask << 8;
 				if temp == 0 {
 					break 'outter;
-				}
+	 			}
 				string.push(temp as char);
 			}
 			// next block in memory.
@@ -257,11 +257,23 @@ impl Tracee {
 		Ok(string)
 	}
 
+	// If we find out that things are going south,
+	// we reject that syscall.
+	// one proposal is to kill it immediately, now we use SIGTERM,
+	// another is to reject that syscall, but we had a hard time doing that.
 	pub fn reject(&self) {
-		self.set_reg(Register::ORIGRAX as u64, 1023);
+/*		let addr = 0;
+		let data = 0;
+		self.base_request(Request::CONT, 
+							addr as *mut libc::c_void,
+							data as *mut libc::c_void);*/
+		/*unsafe{ kill(self.pid, libc::SIGTERM); }*/
+		unimplemented!();
 	}
+
+	// or we can manually kill it anytime we want.
 	pub fn kill(&self) {
-		unsafe{ kill(self.pid, libc::SIGTERM); }
+		unsafe{ kill(self.pid, libc::SIGKILL); }
 	}
 	
 	// perform the base request

@@ -20,7 +20,7 @@ fn main() {
 	loop {
 		unsafe { libc::wait(&mut status); }
 		let registers = tracee.take_regs().unwrap();
-		//println!("{:?}", registers.orig_rax);
+		println!("{:?}", registers.orig_rax);
 		if registers.orig_rax == 1 {
 			let addr = tracee.take_regs().unwrap().rsi;
 			let arg = tracee.read_string(addr);
