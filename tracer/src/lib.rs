@@ -142,7 +142,7 @@ impl Tracee {
 			Err(_) => Err("tracer: failed to attach.".to_string()), 
 		}
 	}
-			// indicate the current process should be traced by its parent
+	// indicate the current process should be traced by its parent
 	pub fn trace_me(&self) -> Result<i64,i64> {
 		// the pid, addr and data will be ignored
 		self.base_request(Request::TRACEME, 
@@ -223,7 +223,6 @@ impl Tracee {
 						addr: *mut libc::c_void, 
 						data: *mut libc::c_void) 
 		-> Result<i64, i64>{
-		//println!("option:{:?}",option);
 		let res;
 		unsafe{
 			res = libc::ptrace(option as u32, self.pid, addr, data);
