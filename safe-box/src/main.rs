@@ -13,10 +13,16 @@ fn safe_wait(){
 fn main() {
 	// read arguments from argvs and turn it into a vec
 	let mut argvs = Vec::new();
-	let argvs_raw = env::args();
-	for x in argvs_raw{
+	let mut argvs_raw = env::args();
+	if (argvs_raw.len() < 2){
+		println!("{:}", "[Error] safe-box: usage error");
+		return ;
+	}
+	for x in argvs_raw.skip(1){
 		argvs.push(x);
 	}
+
+	println!("{:?}", argvs );
 
 	// create a new tracee
 	let tracee = tracer::Tracee::new(&argvs).unwrap();
