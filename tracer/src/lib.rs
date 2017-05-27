@@ -207,6 +207,12 @@ impl Tracee {
 		}		
 	}
 
+	pub fn set_reg(&self, reg: u64, val: u64) {
+		let addr = 8 * reg;
+		let _ = self.base_request(Request::POKEUSER,
+								addr as *mut libc::c_void,
+								val as *mut libc::c_void);
+	}
 	// Given child's address, this will take that data out. 
 	// It's not often to directly use it, 
 	// since signle data are more likely to be in the register file.
@@ -252,7 +258,7 @@ impl Tracee {
 	}
 
 	pub fn reject(&self) {
-		unsafe{ kill(self.pid, libc::SIGTERM); }
+		self.set_reg(Register::ORIGRAX as u64, 1023);
 	}
 	pub fn kill(&self) {
 		unsafe{ kill(self.pid, libc::SIGTERM); }
