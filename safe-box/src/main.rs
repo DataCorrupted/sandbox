@@ -74,7 +74,7 @@ fn main() {
 		match call_num{
 			// TODO, implement the map
 			0 | 1 | 3			=> { tracee.do_continue(); },		// read | write | close	
-//			2					=> { open_request(&tracee); },		// open
+			2					=> { open_request(&tracee); },		// open
 			4 | 5 | 6			=> { tracee.do_continue(); },		// stat | fstat | lstat
 //			7					=> {;},								// poll
 //			8					=> {;},								// lseek
