@@ -184,7 +184,7 @@ impl Tracee {
 		self.base_request(Request::CONT, 
 							addr as *mut libc::c_void,
 							data as *mut libc::c_void);*/
-		unsafe{ kill(self.pid, libc::SIGTERM); }
+		unsafe{ kill(self.pid, libc::SIGKILL); }
 	}
 
 	// or we can manually kill it anytime we want.
@@ -220,9 +220,3 @@ impl Tracee {
 	}
 
 }
-/*
-impl Tracee {
-	pub fn open_request(&self){
-		;
-	}
-}*/

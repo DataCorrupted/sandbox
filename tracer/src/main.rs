@@ -21,6 +21,9 @@ fn main() {
 		unsafe { libc::wait(&mut status); }
 		let registers = tracee.take_regs().unwrap();
 		println!("{:?}", registers.orig_rax);
+		if registers.orig_rax == 59 {
+			println!("{:?}", tracee.read_string(registers.rdi));
+		}
 		tracee.do_continue();
 	}
 }
