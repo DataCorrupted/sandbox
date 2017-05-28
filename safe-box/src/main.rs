@@ -3,6 +3,9 @@ extern crate libc;
 use std::env;
 use std::io::Write;
 use tracer::Tracee;
+
+mod permission;
+use permission::*;
 // retrun when one of the child called syscall
 fn safe_wait(){
 	let mut status = 0;
@@ -58,7 +61,7 @@ fn main() {
 		match call_num{
 			// TODO, implement the map
 			0 | 1 | 3			=> { tracee.do_continue(); },		// read | write | close	
-			2					=> { tracee.open_request(); },		// open
+			2					=> { open_request(&tracee); },		// open
 			4 | 5 | 6			=> { tracee.do_continue(); },		// stat | fstat | lstat
 			7					=> {;},								// poll
 			8					=> {;},								// lseek
