@@ -1,7 +1,6 @@
-extern crate tracer;
-
+use Tracee;
 impl Tracee {
-	fn open_request(){
+	pub fn open_request(&self){
 		;
 	}
 }

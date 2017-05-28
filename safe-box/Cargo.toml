@@ -1,8 +1,8 @@
 [package]
 name = "safe-box"
 version = "0.1.0"
-authors = ["jianxiong Cai <caijx@shanghaitech.edu.cn>"]
+authors = ["jianxiong Cai <caijx@shanghaitech.edu.cn>", "peter <PeterRong96@gmail.com>"]
 
 [dependencies]
 libc = "0.2.23"
-tracer = {path = "/home/ernest/Desktop/sandbox/tracer"}
+tracer = {path = "/home/peter/Desktop/OS/sandbox/tracer"}

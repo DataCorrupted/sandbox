@@ -1,0 +1,124 @@
+ACCESS(2)                            Linux Programmer's Manual                            ACCESS(2)
+
+
+
+NNAAMMEE
+       access - check real user's permissions for a file
+
+SSYYNNOOPPSSIISS
+       ##iinncclluuddee <<uunniissttdd..hh>>
+
+       iinntt aacccceessss((ccoonnsstt cchhaarr **_p_a_t_h_n_a_m_e,, iinntt _m_o_d_e));;
+
+DDEESSCCRRIIPPTTIIOONN
+       aacccceessss()  checks whether the calling process can access the file _p_a_t_h_n_a_m_e.  If _p_a_t_h_n_a_m_e is a
+       symbolic link, it is dereferenced.
+
+       The _m_o_d_e specifies the accessibility check(s) to be performed, and is either the value FF__OOKK,
+       or  a  mask consisting of the bitwise OR of one or more of RR__OOKK, WW__OOKK, and XX__OOKK.  FF__OOKK tests
+       for the existence of the file.  RR__OOKK, WW__OOKK, and XX__OOKK test whether the file exists and grants
+       read, write, and execute permissions, respectively.
+
+       The  check  is  done using the calling process's _r_e_a_l UID and GID, rather than the effective
+       IDs as is done when actually attempting an operation (e.g.,  ooppeenn(2))  on  the  file.   This
+       allows set-user-ID programs to easily determine the invoking user's authority.
+
+       If  the  calling  process  is privileged (i.e., its real UID is zero), then an XX__OOKK check is
+       successful for a regular file if execute permission is enabled for any of  the  file  owner,
+       group, or other.
+
+RREETTUURRNN VVAALLUUEE
+       On success (all requested permissions granted, or _m_o_d_e is FF__OOKK and the file exists), zero is
+       returned.  On error (at least one bit in _m_o_d_e asked for a permission that is denied, or _m_o_d_e
+       is  FF__OOKK  and  the  file  does not exist, or some other error occurred), -1 is returned, and
+       _e_r_r_n_o is set appropriately.
+
+EERRRROORRSS
+       aacccceessss() shall fail if:
+
+       EEAACCCCEESS The requested access would be denied to the file, or search permission is denied  for
+              one  of  the  directories  in  the  path  prefix of _p_a_t_h_n_a_m_e.  (See also ppaatthh__rreessoolluu‐‐
+              ttiioonn(7).)
+
+       EELLOOOOPP  Too many symbolic links were encountered in resolving _p_a_t_h_n_a_m_e.
+
+       EENNAAMMEETTOOOOLLOONNGG
+              _p_a_t_h_n_a_m_e is too long.
+
+       EENNOOEENNTT A component of _p_a_t_h_n_a_m_e does not exist or is a dangling symbolic link.
+
+       EENNOOTTDDIIRR
+              A component used as a directory in _p_a_t_h_n_a_m_e is not, in fact, a directory.
+
+       EERROOFFSS  Write permission was requested for a file on a read-only filesystem.
+
+       aacccceessss() may fail if:
+
+       EEFFAAUULLTT _p_a_t_h_n_a_m_e points outside your accessible address space.
+
+       EEIINNVVAALL _m_o_d_e was incorrectly specified.
+
+       EEIIOO    An I/O error occurred.
+
+       EENNOOMMEEMM Insufficient kernel memory was available.
+
+       EETTXXTTBBSSYY
+              Write access was requested to an executable which is being executed.
+
+CCOONNFFOORRMMIINNGG TTOO
+       SVr4, 4.3BSD, POSIX.1-2001.
+
+NNOOTTEESS
+       WWaarrnniinngg: Using aacccceessss() to check if a user is authorized to, for example, open a file before
+       actually  doing so using ooppeenn(2) creates a security hole, because the user might exploit the
+       short time interval between checking and opening the file to manipulate it.  FFoorr  tthhiiss  rreeaa‐‐
+       ssoonn,, tthhee uussee ooff tthhiiss ssyysstteemm ccaallll sshhoouulldd bbee aavvooiiddeedd.  (In the example just described, a safer
+       alternative would be to temporarily switch the process's effective user ID to  the  real  ID
+       and then call ooppeenn(2).)
+
+       aacccceessss() always dereferences symbolic links.  If you need to check the permissions on a sym‐
+       bolic link, use ffaacccceessssaatt(2) with the flag AATT__SSYYMMLLIINNKK__NNOOFFOOLLLLOOWW.
+
+       aacccceessss() returns an error if any of the access types in _m_o_d_e is denied, even if some of  the
+       other access types in _m_o_d_e are permitted.
+
+       If the calling process has appropriate privileges (i.e., is superuser), POSIX.1-2001 permits
+       an implementation to indicate success for an XX__OOKK check even if none  of  the  execute  file
+       permission bits are set.  Linux does not do this.
+
+       A  file  is accessible only if the permissions on each of the directories in the path prefix
+       of _p_a_t_h_n_a_m_e grant search (i.e., execute) access.  If any directory is inaccessible, then the
+       aacccceessss() call will fail, regardless of the permissions on the file itself.
+
+       Only  access  bits are checked, not the file type or contents.  Therefore, if a directory is
+       found to be writable, it probably means that files can be created in the directory, and  not
+       that the directory can be written as a file.  Similarly, a DOS file may be found to be "exe‐
+       cutable," but the eexxeeccvvee(2) call will still fail.
+
+       aacccceessss() may not work correctly on NFSv2 filesystems with UID mapping enabled,  because  UID
+       mapping  is  done  on the server and hidden from the client, which checks permissions.  (NFS
+       versions 3 and higher perform the check on the server.)  Similar problems can occur to  FUSE
+       mounts.
+
+BBUUGGSS
+       In  kernel  2.4  (and  earlier)  there is some strangeness in the handling of XX__OOKK tests for
+       superuser.  If all categories of execute permission are disabled for  a  nondirectory  file,
+       then  the only aacccceessss() test that returns -1 is when _m_o_d_e is specified as just XX__OOKK; if RR__OOKK
+       or WW__OOKK is also specified in _m_o_d_e, then aacccceessss() returns 0 for such files.  Early  2.6  ker‐
+       nels (up to and including 2.6.3) also behaved in the same way as kernel 2.4.
+
+       In  kernels  before 2.6.20, aacccceessss() ignored the effect of the MMSS__NNOOEEXXEECC flag if it was used
+       to mmoouunntt(2) the underlying filesystem.  Since kernel 2.6.20, aacccceessss() honors this flag.
+
+SSEEEE AALLSSOO
+       cchhmmoodd(2), cchhoowwnn(2), ffaacccceessssaatt(2), ooppeenn(2),  sseettggiidd(2),  sseettuuiidd(2),  ssttaatt(2),  eeuuiiddaacccceessss(3),
+       ccrreeddeennttiiaallss(7), ppaatthh__rreessoolluuttiioonn(7)
+
+CCOOLLOOPPHHOONN
+       This  page  is  part  of  release 3.54 of the Linux _m_a_n_-_p_a_g_e_s project.  A description of the
+       project,    and    information    about    reporting    bugs,    can     be     found     at
+       http://www.kernel.org/doc/man-pages/.
+
+
+
+Linux                                        2013-09-13                                   ACCESS(2)

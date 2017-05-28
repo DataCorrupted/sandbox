@@ -1,0 +1,1 @@
+/home/peter/Desktop/OS/sandbox/tracer/target/debug/libtracer.rlib: /home/peter/Desktop/OS/sandbox/tracer/src/consts.rs /home/peter/Desktop/OS/sandbox/tracer/src/registers.rs /home/peter/Desktop/OS/sandbox/tracer/src/lib.rs /home/peter/Desktop/OS/sandbox/tracer/src/permission.rs

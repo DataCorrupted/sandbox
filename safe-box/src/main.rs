@@ -2,7 +2,7 @@ extern crate tracer;
 extern crate libc;
 use std::env;
 use std::io::Write;
-
+use tracer::Tracee;
 // retrun when one of the child called syscall
 fn safe_wait(){
 	let mut status = 0;
@@ -38,7 +38,7 @@ fn main() {
 	}
 
 	// create a new tracee
-	let tracee = tracer::Tracee::new(&argvs).unwrap();
+	let tracee = Tracee::new(&argvs).unwrap();
 
 	// wait for execvp and start the tracee
 	safe_wait();
@@ -58,7 +58,7 @@ fn main() {
 		match call_num{
 			// TODO, implement the map
 			0 | 1 | 3			=> {pass();},								// read | write | close	
-			2					=> {;},		// open
+			2					=> {tracee.open_request();},		// open
 			4 | 5 | 6			=> {pass();},								// stat | fstat | lstat
 			7					=> {;},								// poll
 			8					=> {;},								// lseek
