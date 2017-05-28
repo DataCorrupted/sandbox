@@ -51,8 +51,10 @@ fn main() {
 		let call_num = tracee.get_syscall().unwrap();
 		match call_num{
 			// TODO, implement the map
-			0 => {},
-			1 => {},
+			0 | 1 | 3 => {;},					// read | write | close
+			2 => { tracee.open_request(); },	// open
+			4 | 5 | 6 => {;},					// stat | fstat | lstat
+			9 | 10 | 11 => {;},					// mmap | mprotect | munmap
 			_ => {},
 		}
 		// record the syscall before continue
