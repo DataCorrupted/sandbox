@@ -6,11 +6,20 @@ use tracer::Tracee;
 
 mod permission;
 use permission::*;
-// retrun when one of the child called syscall
-fn safe_wait(){
+
+// return true if catch a signal or false if the tracee exit
+fn wait_syscall(tracee: &tracer::Tracee) -> bool{
 	let mut status = 0;
-	unsafe {
-		libc::wait(&mut status);
+	// wait for the child syscall
+	unsafe{
+		libc::waitpid(tracee.take_pid(),&mut status,0);
+	}
+	// TODO: UPDATE the syscall exit/entry flag 
+	if unsafe{ libc::WIFEXITED(status)} {
+		return false;
+	}
+	else{
+		return true;
 	}
 }
 
@@ -44,14 +53,14 @@ fn main() {
 	let tracee = Tracee::new(&argvs).unwrap();
 
 	// wait for execvp and start the tracee
-	safe_wait();
+	wait_syscall(&tracee);
 	tracee.do_continue();
 	
 	// wait for every sys call the tracee make and then determine whether the syscall is valid 
 	// TODO if the child make a fork, the box also fork a process to trace the process forked by child
 	let mut last_syscall = 0xffffffffffffffff;
 	loop {
-		safe_wait();
+		wait_syscall(&tracee);
 		if !check_process(&tracee) { break; }		// break the loop when the child exit, handle the sys call
 		let call_num = tracee.get_syscall().unwrap();
 		// Grouping philosophy: 
