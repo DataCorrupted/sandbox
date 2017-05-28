@@ -16,9 +16,6 @@ pub struct Tracee {
 	pid: libc::pid_t,
 }
 
-// Such mod does permission checking.
-mod permission;
-
 impl Tracee {
 
 	// create a tracee with a pid, and attach the caller to the tracee
