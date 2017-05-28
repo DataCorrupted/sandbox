@@ -14,6 +14,8 @@ use registers::Registers;
 #[derive(Debug, Clone)]
 pub struct Tracee {
 	pid: libc::pid_t,
+	entry_flag : bool,				// indicate whether it is on entry or exit from a syscall
+	last_syscall: u64,
 }
 
 impl Tracee {
@@ -24,7 +26,7 @@ impl Tracee {
 	pub fn new(args: &Vec<String>) -> Result<Tracee,&'static str>{
 		// fork a child process
 		let child = unsafe{ libc::fork() };
-		let tracee = Tracee{ pid: child };
+		let mut tracee = Tracee{ pid: child, entry_flag: false, last_syscall: 1023 };
 		// if succes, child process run trace_me
 		match tracee.pid{
 			-1 => {							// failed to fork
@@ -63,7 +65,7 @@ impl Tracee {
 	// yet another way to tracee a process with given pid.
 	// It is not recommended.
 	pub fn from(pid: i32) -> Result<Tracee, String>{
-		let tracee = Tracee{ pid : pid };
+		let tracee = Tracee{ pid : pid, entry_flag: false, last_syscall: 1023  };
 		match tracee.attach(){
 			Ok(_) => Ok(tracee),
 			Err(_) => Err("tracer: failed to attach.".to_string()), 
@@ -219,4 +221,71 @@ impl Tracee {
 		}
 	}
 
+	// return true if the tracee is on the entry of a syscall
+	pub fn is_on_entry(&self) -> bool{
+		self.entry_flag
+	}
+
+	// return true if catch a signal or false if the tracee exit
+	pub fn wait_syscall(&mut self) -> Result<bool,String>{
+		let mut status = 0;
+		// wait for the child syscall
+		unsafe{
+			libc::waitpid(self.take_pid(),&mut status,0);
+		}
+		// check whether the waitpid return because of exit
+		if unsafe{ libc::WIFEXITED(status)} {
+			return Ok(false);
+		}
+		// if the tracee made a syscall
+		else{
+			// Update the syscall exit/entry flag 
+			match self.update_entry_falg(){
+				false => return Err("Failed to update the entry flag".to_string()),
+				true => {},
+			}
+			return Ok(true);
+		}
+	}
+
+	// update the entry falg and last syscall
+	// return true on success or false on failure
+	// This function should be called only 
+	fn update_entry_falg(&mut self) -> bool{
+		let call_num;
+		match self.get_syscall(){
+			Ok(temp) => call_num = temp,
+			Err(_) => return false,
+		}
+
+		let last_call = self.last_syscall;
+		// println!("call_num {:?}", call_num);
+		// println!("last_call {:?}", last_call);
+
+		// update the entry flag
+		if call_num == 59{			//execvp
+			if self.last_syscall != 59{self.entry_flag = true;}		// if it is on entry
+			else{self.entry_flag = false;}
+		}
+		else if (last_call == call_num){
+			self.entry_flag = !self.entry_flag;
+		}
+		else {
+			// println!("{:?}", "I'm here_2" );
+			self.entry_flag = true;
+		}
+
+		// update the last_syscall
+		// println!("entry: {:?}", self.entry_flag);
+		// println!("" );
+		self.last_syscall = call_num;
+		return true;
+	}
+
 }
+/*
+impl Tracee {
+	pub fn open_request(&self){
+		;
+	}
+}*/

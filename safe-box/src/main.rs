@@ -7,21 +7,6 @@ use tracer::Tracee;
 mod permission;
 use permission::*;
 
-// return true if catch a signal or false if the tracee exit
-fn wait_syscall(tracee: &tracer::Tracee) -> bool{
-	let mut status = 0;
-	// wait for the child syscall
-	unsafe{
-		libc::waitpid(tracee.take_pid(),&mut status,0);
-	}
-	// TODO: UPDATE the syscall exit/entry flag 
-	if unsafe{ libc::WIFEXITED(status)} {
-		false
-	}
-	else{
-		true
-	}
-}
 
 // return true if the process is still alive
 fn check_process(tracee: &tracer::Tracee) -> bool{
@@ -48,21 +33,22 @@ fn main() {
 	}
 
 	// create a new tracee
-	let tracee = Tracee::new(&argvs).unwrap();
+	let mut tracee = Tracee::new(&argvs).unwrap();
 
 	// wait for execvp and start the tracee
-	wait_syscall(&tracee);
+	tracee.wait_syscall();
 	tracee.do_continue();
 	
 	// wait for every sys call the tracee make and then determine whether the syscall is valid 
 	// TODO if the child make a fork, the box also fork a process to trace the process forked by child
 	let mut last_syscall = 0xffffffffffffffff;
 	loop {
-		let temp = wait_syscall(&tracee);
+		let temp = tracee.wait_syscall().unwrap();
+		// println!("caller: {:?}",tracee.is_on_entry());
 		if !temp { break; }
 		if !check_process(&tracee) { break; }		// break the loop when the child exit, handle the sys call
 		let call_num = tracee.get_syscall().unwrap();
-		println!("{:?}, {}", temp, call_num);
+		// println!("{:?}, {}", temp, call_num);
 		// Grouping philosophy: 
 		// Some "musts" with similar function are grouped together. [ by "musts" I mean must pass(like read) or must deny(like chdir) ]
 		// Other undetermined with same arguments position in registers are grouped together.
