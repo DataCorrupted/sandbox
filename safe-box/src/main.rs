@@ -42,7 +42,7 @@ fn main() {
 
 	// wait for execvp and start the tracee
 	safe_wait();
-	let _ = tracee.do_continue();
+	tracee.do_continue();
 	
 	// wait for every sys call the tracee make and then determine whether the syscall is valid 
 	// TODO if the child make a fork, the box also fork a process to trace the process forked by child
@@ -57,9 +57,9 @@ fn main() {
 		// ( So that doing checking will be easier. )
 		match call_num{
 			// TODO, implement the map
-			0 | 1 | 3			=> {pass();},								// read | write | close	
-			2					=> {tracee.open_request();},		// open
-			4 | 5 | 6			=> {pass();},								// stat | fstat | lstat
+			0 | 1 | 3			=> { tracee.do_continue(); },		// read | write | close	
+			2					=> { tracee.open_request(); },		// open
+			4 | 5 | 6			=> { tracee.do_continue(); },		// stat | fstat | lstat
 			7					=> {;},								// poll
 			8					=> {;},								// lseek
 			9 | 10 | 11			=> {;},								// mmap | mprotect | munmap
@@ -71,22 +71,24 @@ fn main() {
 			22					=> {;},								// pipe
 			23					=> {;},								// select
 			24					=> {;},								// sys_sched_yield
-			25 | 26 | 27 | 28	=> {;},								// mremap | msync | mincore | madvise
+			25 | 26 | 27 | 28	=> {pass();},								// mremap | msync | mincore | madvise
 			// I personally couldn't really understand the following 3 syscalls.
 			29 | 30 | 31		=> {;},								// shmget | shmat | shmctl
-			32 | 33				=> {pass();},								// dup | dup2
-			34 | 35				=> {pass();},								// pause
-			36 | 37 | 38		=> {pass();},								// getitimer | alarm | setitimer
-			39 					=> {pass();},								// getpid
-			40					=> {pass();},								// sendfile
-			41					=> {pass();},								// socket
-			42					=> {pass();},								// connect
-
+			32 | 33				=> { tracee.do_continue(); },		// dup | dup2
+			34 | 35				=> { tracee.do_continue(); },		// pause
+			36 | 37 | 38		=> { tracee.do_continue(); },		// getitimer | alarm | setitimer
+			39 					=> { tracee.do_continue(); },		// getpid
+			40					=> { tracee.do_continue(); },		// sendfile
+			41					=> {},								// socket
+			42					=> {},								// connect
+			57 | 58				=> { tracee.deny(); },				// fork | vfork, we also don't allow it for now.
+			60 					=> { tracee.do_continue(); }				// exit
+			62					=> { tracee.deny(); },				// kill, we always deny it.	
 			_ => {},
 		}
 		// record the syscall before continue
 		last_syscall = call_num;
-		let _ = tracee.do_continue();
+		tracee.do_continue();
 	}
 
 }

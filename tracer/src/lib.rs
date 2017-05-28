@@ -96,10 +96,11 @@ impl Tracee {
 	}
 
 	// continue execution and stop the tracee on the entry of the next syscall
-	pub fn do_continue(&self) -> Result<i64, i64>{
+	pub fn do_continue(&self){
 		let temp = 0;
 		self.base_request(Request::SYSCALL, 
-							ptr::null_mut(), temp as *mut libc::c_void)
+							ptr::null_mut(), temp as *mut libc::c_void) 
+		.unwrap();
 	}
 
 	// Take a certain registers from register file. 
@@ -177,17 +178,16 @@ impl Tracee {
 	}
 
 	// If we find out that things are going south,
-	// we reject that syscall.
+	// we deny that syscall.
 	// one proposal is to kill it immediately, now we use SIGTERM,
-	// another is to reject that syscall, but we had a hard time doing that.
-	pub fn reject(&self) {
+	// another is to deny that syscall, but we had a hard time doing that.
+	pub fn deny(&self) {
 /*		let addr = 0;
 		let data = 0;
 		self.base_request(Request::CONT, 
 							addr as *mut libc::c_void,
 							data as *mut libc::c_void);*/
-		/*unsafe{ kill(self.pid, libc::SIGTERM); }*/
-		unimplemented!();
+		unsafe{ kill(self.pid, libc::SIGTERM); }
 	}
 
 	// or we can manually kill it anytime we want.

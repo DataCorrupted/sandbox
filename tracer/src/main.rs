@@ -21,19 +21,6 @@ fn main() {
 		unsafe { libc::wait(&mut status); }
 		let registers = tracee.take_regs().unwrap();
 		println!("{:?}", registers.orig_rax);
-		if registers.orig_rax == 1 {
-			let addr = tracee.take_regs().unwrap().rsi;
-			let arg = tracee.read_string(addr);
-			for c in arg{
-				if c == "2^2 5^1\n" {
-					tracee.reject();		
-				}
-			}
-			
-		}
-		match tracee.do_continue() {
-			Ok(_) => {;},
-			Err(_) => break,
-		};
+		tracee.do_continue();
 	}
 }
