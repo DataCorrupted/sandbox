@@ -4,6 +4,7 @@ use libc::*;
 use std::ffi::*;
 use std::default::Default;
 use std::ptr;
+use std::process::exit;
 
 mod consts;
 use consts::*;
@@ -26,7 +27,7 @@ impl Tracee {
 	pub fn new(args: &Vec<String>) -> Result<Tracee,&'static str>{
 		// fork a child process
 		let child = unsafe{ libc::fork() };
-		let mut tracee = Tracee{ pid: child, entry_flag: false, last_syscall: 1023 };
+		let tracee = Tracee{ pid: child, entry_flag: false, last_syscall: 1023 };
 		// if succes, child process run trace_me
 		match tracee.pid{
 			-1 => {							// failed to fork
@@ -187,11 +188,13 @@ impl Tracee {
 							addr as *mut libc::c_void,
 							data as *mut libc::c_void);*/
 		unsafe{ kill(self.pid, libc::SIGKILL); }
+		exit(0);
 	}
 
 	// or we can manually kill it anytime we want.
 	pub fn kill(&self) {
 		unsafe{ kill(self.pid, libc::SIGKILL); }
+		exit(0);
 	}
 	
 	// perform the base request
@@ -222,7 +225,7 @@ impl Tracee {
 	}
 
 	// return true if the tracee is on the entry of a syscall
-	pub fn is_on_entry(&self) -> bool{
+	pub fn is_entry(&self) -> bool{
 		self.entry_flag
 	}
 
@@ -240,7 +243,7 @@ impl Tracee {
 		// if the tracee made a syscall
 		else{
 			// Update the syscall exit/entry flag 
-			match self.update_entry_falg(){
+			match self.update_entry_flag(){
 				false => return Err("Failed to update the entry flag".to_string()),
 				true => {},
 			}
@@ -248,10 +251,10 @@ impl Tracee {
 		}
 	}
 
-	// update the entry falg and last syscall
+	// update the entry flag and last syscall
 	// return true on success or false on failure
 	// This function should be called only 
-	fn update_entry_falg(&mut self) -> bool{
+	fn update_entry_flag(&mut self) -> bool{
 		let call_num;
 		match self.get_syscall(){
 			Ok(temp) => call_num = temp,
@@ -283,9 +286,3 @@ impl Tracee {
 	}
 
 }
-/*
-impl Tracee {
-	pub fn open_request(&self){
-		;
-	}
-}*/

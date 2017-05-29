@@ -52,6 +52,10 @@ fn main() {
 		// Some "musts" with similar function are grouped together. [ by "musts" I mean must pass(like read) or must deny(like chdir) ]
 		// Other undetermined with same arguments position in registers are grouped together.
 		// ( So that doing checking will be easier. )
+		if !tracee.is_entry() { 
+			tracee.do_continue();
+			continue;
+		}
 		let registers = tracee.take_regs().unwrap();
 		if registers.orig_rax == 59 {
 			println!("{:?}", tracee.read_string(registers.rdi));
@@ -82,10 +86,10 @@ fn main() {
 			39 					=> { tracee.do_continue(); },		// getpid
 			40					=> { tracee.do_continue(); },		// sendfile
 //			41					=> {},								// socket
-//			42					=> {},								// connect
-//			56 | 57 | 58		=> { tracee.deny(); },				// fork | vfork, we also don't allow it for now.
+			42					=> { connect_request(&tracee); },	// connect
+			56 | 57 | 58		=> { tracee.deny(); },				// fork | vfork, we don't allow it for now.
 			59 					=> { execve_request(&tracee); },	// execve
-			60 					=> { tracee.do_continue(); }				// exit
+			60 					=> { tracee.do_continue(); }		// exit, why bother preventing someone from suicide?
 			62					=> { tracee.deny(); },				// kill, we always deny it.	
 			_ => {tracee.do_continue();},
 		}

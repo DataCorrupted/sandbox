@@ -28,7 +28,7 @@ fn shorten(filename: String) -> String {
 
 }
 
-fn check(filename: &String) -> PosEval {
+fn check_pos(filename: &String) -> PosEval {
 	match filename.find("/home") {
 		None => PosEval::Out,
 		Some(_) => {
@@ -44,8 +44,7 @@ pub fn open_request(tracee: &Tracee) {
 	let registers = tracee.take_regs().unwrap();
 	let mut filename = tracee.read_string(registers.rdi).unwrap();
 	filename = shorten(filename);
-	println!("{}", filename);
-	match check(&filename) {
+	match check_pos(&filename) {
 		PosEval::Danger => {
 			match filename.find(".rustup"){
 				Some(_)	=> tracee.do_continue(),
@@ -56,16 +55,6 @@ pub fn open_request(tracee: &Tracee) {
 		PosEval::In | PosEval::Out => {
 			tracee.do_continue();	
 		},
-/*		PosEval::Out => {
-
-			let mode = registers.rdx;
-			println!("mode: {:?}", mode);
-			if mode & 0x11 == 0 {
-				tracee.do_continue();
-			} else {
-				tracee.deny();
-			}
-		}*/
 	};
 }
 
@@ -73,7 +62,7 @@ pub fn execve_request(tracee: &Tracee) {
 	let registers = tracee.take_regs().unwrap();
 	let mut filename = tracee.read_string(registers.rdi).unwrap();
 	filename = shorten(filename);
-	match check(&filename) {
+	match check_pos(&filename) {
 		PosEval::Danger => {
 			tracee.deny();
 		},
@@ -81,6 +70,24 @@ pub fn execve_request(tracee: &Tracee) {
 			tracee.do_continue();	
 		},
 	};
+}
+
+pub fn connect_request(tracee: &Tracee) {
+	let registers = tracee.take_regs().unwrap();
+	let sockaddr = registers.rsi;
+	let addrlen = registers.rdx;
+	for offset in 0..2 {
+		let mut data = tracee.peek_data(sockaddr + offset * 8).unwrap();
+		println!("{:?}", data);
+		let mask = 0xff;
+		for byte_index in 0..8 {
+			print!("{} ", (data & mask));
+			data = data >> 8;
+		}
+		println!("");
+	}
+	println!("{:?} {}", tracee.peek_data(sockaddr), addrlen);
+	tracee.do_continue();
 }
 
 #[test]
