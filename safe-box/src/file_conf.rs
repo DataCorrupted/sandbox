@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;
-use sub_string::SubString;
+use file_name::FileName;
 
 pub struct FileConf{
 	premitted_files: Vec<String>
@@ -35,7 +35,7 @@ impl FileConf {
 
 	pub fn is_file_allowed(&self, que: &String) -> bool{
 		for x in self.get_files(){
-			if x.is_substr_of(que) {
+			if que.is_inside(&x) {
 				return true;
 			}
 		}

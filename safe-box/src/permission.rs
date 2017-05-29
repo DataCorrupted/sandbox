@@ -3,31 +3,13 @@ use tracer::Tracee;
 use std::env;
 
 use file_conf::*;
+use file_name::*;
 
 #[derive(Debug)]
 enum PosEval {
 	Out,
 	Danger,
 	In,
-}
-
-fn shorten(filename: String) -> String {
-	let path_vec: Vec<String> = filename.clone().split('/').map(|x| x.to_string()).collect();
-	let mut new_path: Vec<String> = Vec::new();
-	// We need to skip the first one rep since is "" (because of split)
-	for rep in path_vec.into_iter().skip(1) {
-		if rep == "..".to_string(){
-			let _ = new_path.pop();
-		} else if rep != ".".to_string() {
-			new_path.push(rep);
-		}
-	}
-	let mut filename = String::new();
-	for rep in new_path {
-		filename = filename + "/" + rep.as_str();
-	}
-	filename
-
 }
 
 fn check_pos(filename: &String) -> PosEval {
@@ -47,12 +29,12 @@ pub fn open_request(tracee: &Tracee, allowed_file: &FileConf) {
 	println!("{:?}", allowed_file.is_file_allowed(&temp));
 	let registers = tracee.take_regs().unwrap();
 	let mut filename = tracee.read_string(registers.rdi).unwrap();
-	filename = shorten(filename);
+	filename = filename.shorten();
 	match check_pos(&filename) {
 		PosEval::Danger => {
-			match filename.find("/home/peter/.rustup"){
-				Some(_)	=> tracee.do_continue(),
-				None  => tracee.deny(),
+			match allowed_file.is_file_allowed(&filename){
+				true	=> tracee.do_continue(),
+				false	=> tracee.deny(),
 			}
 			
 		},
@@ -65,7 +47,7 @@ pub fn open_request(tracee: &Tracee, allowed_file: &FileConf) {
 pub fn execve_request(tracee: &Tracee) {
 	let registers = tracee.take_regs().unwrap();
 	let mut filename = tracee.read_string(registers.rdi).unwrap();
-	filename = shorten(filename);
+	filename = filename.shorten();
 	match check_pos(&filename) {
 		PosEval::Danger => {
 			tracee.deny();
@@ -92,10 +74,4 @@ pub fn connect_request(tracee: &Tracee) {
 	}
 	println!("{:?} {}", tracee.peek_data(sockaddr), addrlen);
 	tracee.do_continue();
-}
-
-#[test]
-fn test_shorten() {
-	let string = "/../../.././from/a/.././asdf/../a".to_string();
-	assert_eq!(shorten(string), "/from/a".to_string());
 }

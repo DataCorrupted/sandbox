@@ -10,7 +10,7 @@ use file_conf::*;
 mod permission;
 use permission::*;
 
-mod sub_string;
+mod file_name;
 
 // return true if the process is still alive
 fn check_process(tracee: &tracer::Tracee) -> bool{
