@@ -117,10 +117,10 @@ fn main() {
 			51 | 52				=> { tracee.do_continue(); },		// getsockname | getpeername
 			53					=> { tracee.do_continue(); },		// socketpair
 			54 | 55				=> { tracee.do_continue(); },		// setsockopt | getsockopt
-			56 | 57 | 58		=> { tracee.deny(); },				// fork | vfork, we don't allow it for now.
+//			56 | 57 | 58		=> { tracee.deny(); },				// fork | vfork, we don't allow it for now.
 			59 					=> { execve_request(&tracee); },	// execve
 			60 					=> { tracee.do_continue(); }		// exit, why bother preventing someone from suicide?
-			62					=> { tracee.deny(); },				// kill, we always deny it.	
+//			62					=> { tracee.deny(); },				// kill, we always deny it.	
 			_ => {tracee.do_continue();},
 		}
 		// record the syscall before continue
