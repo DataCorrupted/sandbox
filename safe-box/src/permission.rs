@@ -12,7 +12,8 @@ enum PosEval {
 fn shorten(filename: String) -> String {
 	let path_vec: Vec<String> = filename.clone().split('/').map(|x| x.to_string()).collect();
 	let mut new_path: Vec<String> = Vec::new();
-	for rep in path_vec {
+	// We need to skip the first one rep since is "" (because of split)
+	for rep in path_vec.into_iter().skip(1) {
 		if rep == "..".to_string(){
 			let _ = new_path.pop();
 		} else if rep != ".".to_string() {
@@ -41,8 +42,35 @@ fn check(filename: &String) -> PosEval {
 
 pub fn open_request(tracee: &Tracee) {
 	let registers = tracee.take_regs().unwrap();
-	let mode = registers.rdx;
-	let flags = registers.rsi;
+	let mut filename = tracee.read_string(registers.rdi).unwrap();
+	filename = shorten(filename);
+	println!("{}", filename);
+	match check(&filename) {
+		PosEval::Danger => {
+			match filename.find(".rustup"){
+				Some(_)	=> tracee.do_continue(),
+				None  => tracee.deny(),
+			}
+			
+		},
+		PosEval::In | PosEval::Out => {
+			tracee.do_continue();	
+		},
+/*		PosEval::Out => {
+
+			let mode = registers.rdx;
+			println!("mode: {:?}", mode);
+			if mode & 0x11 == 0 {
+				tracee.do_continue();
+			} else {
+				tracee.deny();
+			}
+		}*/
+	};
+}
+
+pub fn execve_request(tracee: &Tracee) {
+	let registers = tracee.take_regs().unwrap();
 	let mut filename = tracee.read_string(registers.rdi).unwrap();
 	filename = shorten(filename);
 	match check(&filename) {
@@ -53,7 +81,6 @@ pub fn open_request(tracee: &Tracee) {
 			tracee.do_continue();	
 		},
 	};
-	
 }
 
 #[test]

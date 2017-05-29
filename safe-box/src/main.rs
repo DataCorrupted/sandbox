@@ -36,12 +36,11 @@ fn main() {
 	let mut tracee = Tracee::new(&argvs).unwrap();
 
 	// wait for execvp and start the tracee
-	tracee.wait_syscall();
+	let _ = tracee.wait_syscall();
 	tracee.do_continue();
 	
 	// wait for every sys call the tracee make and then determine whether the syscall is valid 
 	// TODO if the child make a fork, the box also fork a process to trace the process forked by child
-	let mut last_syscall = 0xffffffffffffffff;
 	loop {
 		let temp = tracee.wait_syscall().unwrap();
 		// println!("caller: {:?}",tracee.is_on_entry());
@@ -57,6 +56,7 @@ fn main() {
 		if registers.orig_rax == 59 {
 			println!("{:?}", tracee.read_string(registers.rdi));
 		}
+		println!("{}", registers.orig_rax);
 		match call_num{
 			// TODO, implement the map
 			0 | 1 | 3			=> { tracee.do_continue(); },		// read | write | close	
@@ -64,9 +64,9 @@ fn main() {
 			4 | 5 | 6			=> { tracee.do_continue(); },		// stat | fstat | lstat
 //			7					=> {;},								// poll
 //			8					=> {;},								// lseek
-//			9 | 10 | 11			=> {;},								// mmap | mprotect | munmap
-//			12					=> {;},								// brk
-//			13 | 14 | 15 		=> {;},								// sigaction | sigprocmask | sigreturn
+			9 | 10 | 11			=> { tracee.do_continue(); },		// mmap | mprotect | munmap
+			12					=> { tracee.do_continue(); },		// brk
+			13 | 14 | 15 		=> { tracee.do_continue(); },		// sigaction | sigprocmask | sigreturn
 //			16					=> {;},								// ioctl
 //			17 | 18 | 19 | 20	=> {;},								// pread64 | pwrite64 | readv | writev
 //			21					=> {;},								// access
@@ -83,14 +83,13 @@ fn main() {
 			40					=> { tracee.do_continue(); },		// sendfile
 //			41					=> {},								// socket
 //			42					=> {},								// connect
-			56 | 57 | 58		=> { tracee.deny(); },				// fork | vfork, we also don't allow it for now.
-			59 					=> { tracee.do_continue(); }		// execve
+//			56 | 57 | 58		=> { tracee.deny(); },				// fork | vfork, we also don't allow it for now.
+			59 					=> { execve_request(&tracee); },	// execve
 			60 					=> { tracee.do_continue(); }				// exit
 			62					=> { tracee.deny(); },				// kill, we always deny it.	
 			_ => {tracee.do_continue();},
 		}
 		// record the syscall before continue
-		last_syscall = call_num;
 	}
 
 }
