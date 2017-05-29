@@ -1,0 +1,21 @@
+--2017-05-30 01:06:50--  http://www.github.com/
+Resolving www.github.com (www.github.com)... 192.30.255.112, 192.30.255.113
+Connecting to www.github.com (www.github.com)|192.30.255.112|:80... connected.
+HTTP request sent, awaiting response... 301 Moved Permanently
+Location: https://www.github.com/ [following]
+--2017-05-30 01:06:50--  https://www.github.com/
+Connecting to www.github.com (www.github.com)|192.30.255.112|:443... connected.
+HTTP request sent, awaiting response... 301 Moved Permanently
+Location: https://github.com/ [following]
+--2017-05-30 01:06:51--  https://github.com/
+Resolving github.com (github.com)... 192.30.255.113, 192.30.255.112
+Connecting to github.com (github.com)|192.30.255.113|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified [text/html]
+Saving to: ‘index.html.5’
+
+     0K .......... .......... .......... .......... .......... 69.7K
+    50K .......... .......... .......... .......... .....       223K=0.9s
+
+2017-05-30 01:06:54 (104 KB/s) - ‘index.html.5’ saved [97801]
+
