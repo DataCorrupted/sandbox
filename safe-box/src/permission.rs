@@ -61,11 +61,6 @@ pub fn connect_request(tracee: &mut Tracee, allowed_ip: &IpConf) {
 	let registers = tracee.take_regs().unwrap();
 	let addrlen = registers.rdx;
 
-	if addrlen != 16 {
-		tracee.do_continue();
-		return;
-	}
-
 	let ip_str = tracee.take_ip().unwrap();
 	tracee.add_ip(ip_str.clone());
 	match allowed_ip.is_ip_allowed(&ip_str){

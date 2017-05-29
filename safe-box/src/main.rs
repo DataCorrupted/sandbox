@@ -3,6 +3,7 @@ extern crate libc;
 use std::env;
 use std::io::Write;
 use tracer::Tracee;
+use std::process::exit;
 
 mod file_conf;
 use file_conf::*;
@@ -37,11 +38,14 @@ fn main() {
 	let argvs_raw = env::args();
 	if  argvs_raw.len() < 2  {
 		let _ = writeln!(&mut std::io::stderr(), "[Error] safe-box: usage error");
-		return ;
+		let _ = writeln!(&mut std::io::stderr(), "usage: ./safe-box [option] <tracee>");
+		let _ = writeln!(&mut std::io::stderr(), "use --help for more help.");
+		exit(0);
 	}
 	let mut start = false;
 	for x in argvs_raw.skip(1){
 		match x.as_str() {
+			"--help" => { print_help(); exit(0); }
 			"-ip" => { rec_ip = true; },
 			"-file" => { rec_fi = true; },
 			"-aa" => { allow_all = true; },
@@ -150,3 +154,23 @@ fn main() {
 	}
 
 }
+
+fn print_help() {
+	let _ = writeln!(&mut std::io::stderr(), 
+	let _ = writeln!(&mut std::io::stderr(), "sandbox");
+	let _ = writeln!(&mut std::io::stderr(), "by Perer Rong & Jianxiong Cai");
+	let _ = writeln!(&mut std::io::stderr(), "");
+	let _ = writeln!(&mut std::io::stderr(), "Usage: ");
+	let _ = writeln!(&mut std::io::stderr(), "	./safe-box [option] <tracee>");
+	let _ = writeln!(&mut std::io::stderr(), "Option: ");
+	let _ = writeln!(&mut std::io::stderr(), "	--help: 	Print help message.");
+	let _ = writeln!(&mut std::io::stderr(), "	-aa: 		Allow all syscalls. Often used with -ip or -file to see what ip/file is used.");
+	let _ = writeln!(&mut std::io::stderr(), "			Only use this when you trust the programme.");
+	let _ = writeln!(&mut std::io::stderr(), "	-ip: 		Print all ip address connected after tracee ends.");
+	let _ = writeln!(&mut std::io::stderr(), "	-file: 		Print all file opened after tracee ends.");
+	let _ = writeln!(&mut std::io::stderr(), "		notice: -ip and -file will not print anything is any syscall is denied.");
+	let _ = writeln!(&mut std::io::stderr(), "Config file: ");
+	let _ = writeln!(&mut std::io::stderr(), "	ip_permission.conf: permitted ip addresses. Any address listed will be allowed.");
+	let _ = writeln!(&mut std::io::stderr(), "	file_permission.conf: permitted files/ directories. any file listed or inside listed directory will be allowed.");
+	let _ = writeln!(&mut std::io::stderr(), "");
+}	
