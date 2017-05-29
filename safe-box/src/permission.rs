@@ -36,7 +36,7 @@ pub fn open_request(tracee: &Tracee, allowed_file: &FileConf,
 		PosEval::Danger => {
 			match allowed_file.is_file_allowed(&filename){
 				true	=> tracee.do_continue(),
-				false	=> tracee.deny(),
+				false	=> tracee.deny(file_opened),
 			}
 			
 		},
@@ -52,7 +52,8 @@ pub fn execve_request(tracee: &Tracee) {
 	filename = filename.shorten();
 	match check_pos(&filename) {
 		PosEval::Danger => {
-			tracee.deny();
+			let temp = Vec::new();
+			tracee.deny(&temp);
 		},
 		PosEval::In | PosEval::Out => {
 			tracee.do_continue();	
@@ -65,6 +66,11 @@ pub fn connect_request(tracee: &Tracee, allowed_ip: &IpConf,
 	let registers = tracee.take_regs().unwrap();
 	let sockaddr = registers.rsi;
 	let addrlen = registers.rdx;
+
+	if addrlen != 16 {
+		tracee.do_continue();
+		return;
+	}
 
 	let mut data = tracee.peek_data(sockaddr).unwrap();
 	let mask = 0xff00000000;
@@ -82,6 +88,6 @@ pub fn connect_request(tracee: &Tracee, allowed_ip: &IpConf,
 	ip_connected.push(ip_str.clone());
 	match allowed_ip.is_ip_allowed(&ip_str){
 		true => tracee.do_continue(),
-		false => tracee.deny(),
+		false => tracee.deny(ip_connected),
 	};
 }

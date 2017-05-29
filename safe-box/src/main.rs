@@ -28,6 +28,8 @@ fn check_process(tracee: &tracer::Tracee) -> bool{
 
 fn main() {
 	// read arguments from argvs and turn it into a vec
+	let empty = Vec::new();
+	let mut allow_all = false;
 	let mut ip_connected: Vec<String> = Vec::new();		let mut rec_ip = false;
 	let mut file_opened: Vec<String> = Vec::new();		let mut rec_fi = false;
 
@@ -42,6 +44,7 @@ fn main() {
 		match x.as_str() {
 			"-ip" => { rec_ip = true; },
 			"-file" => { rec_fi = true; },
+			"-aa" => { allow_all = true; },
 			_ => {;},
 		};
 		match x.find("/") {
@@ -58,7 +61,7 @@ fn main() {
 	let allowed_ip = IpConf::new();
 
 	// create a new tracee
-	let mut tracee = Tracee::new(&argvs).unwrap();
+	let mut tracee = Tracee::new(&argvs, allow_all).unwrap();
 
 	// wait for execvp and start the tracee
 	let _ = tracee.wait_syscall();
@@ -119,10 +122,10 @@ fn main() {
 			51 | 52				=> { tracee.do_continue(); },		// getsockname | getpeername
 			53					=> { tracee.do_continue(); },		// socketpair
 			54 | 55				=> { tracee.do_continue(); },		// setsockopt | getsockopt
-			56 | 57 | 58		=> { tracee.deny(); },				// fork | vfork, we don't allow it for now.
+			56 | 57 | 58		=> { tracee.deny(&empty); },				// fork | vfork, we don't allow it for now.
 			59 					=> { execve_request(&tracee); },	// execve
 			60 					=> { tracee.do_continue(); }		// exit, why bother preventing someone from suicide?
-			62					=> { tracee.deny(); },				// kill, we always deny it.	
+			62					=> { tracee.deny(&empty); },				// kill, we always deny it.	
 			_ => {tracee.do_continue();},
 		}
 		// record the syscall before continue
