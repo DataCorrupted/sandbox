@@ -63,6 +63,7 @@ fn main() {
 		println!("{}", registers.orig_rax);
 		match call_num{
 			// TODO, implement the map
+			// IO / Memory part
 			0 | 1 | 3			=> { tracee.do_continue(); },		// read | write | close	
 			2					=> { open_request(&tracee); },		// open
 			4 | 5 | 6			=> { tracee.do_continue(); },		// stat | fstat | lstat
@@ -85,8 +86,16 @@ fn main() {
 			36 | 37 | 38		=> { tracee.do_continue(); },		// getitimer | alarm | setitimer
 			39 					=> { tracee.do_continue(); },		// getpid
 			40					=> { tracee.do_continue(); },		// sendfile
-//			41					=> {},								// socket
+			// Internet part
+			41					=> { tracee.do_continue(); },		// socket
 			42					=> { connect_request(&tracee); },	// connect
+			43 | 44 | 45		=> { tracee.do_continue(); },		// accept | sendto | recvfrom
+			46 | 47				=> { tracee.do_continue(); },		// sendmsg | recvmsg
+			48 					=> { tracee.do_continue(); },		// shutdown
+			49 | 50				=> { tracee.do_continue(); },		// bind | listen
+			51 | 52				=> { tracee.do_continue(); },		// getsockname | getpeername
+			53					=> { tracee.do_continue(); },		// socketpair
+			54 | 55				=> { tracee.do_continue(); },		// setsockopt | getsockopt
 			56 | 57 | 58		=> { tracee.deny(); },				// fork | vfork, we don't allow it for now.
 			59 					=> { execve_request(&tracee); },	// execve
 			60 					=> { tracee.do_continue(); }		// exit, why bother preventing someone from suicide?
