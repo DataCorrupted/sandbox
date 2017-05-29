@@ -29,8 +29,8 @@ fn check_process(tracee: &tracer::Tracee) -> bool{
 fn main() {
 	// read arguments from argvs and turn it into a vec
 	let mut allow_all = false;
-	let mut ip_connected: Vec<String> = Vec::new();		let mut rec_ip = false;
-	let mut file_opened: Vec<String> = Vec::new();		let mut rec_fi = false;
+	let mut rec_ip = false;
+	let mut rec_fi = false;
 
 	let mut argvs = Vec::new();
 	let argvs_raw = env::args();
@@ -76,12 +76,10 @@ fn main() {
 		// Some "musts" with similar function are grouped together. [ by "musts" I mean must pass(like read) or must deny(like chdir) ]
 		// Other undetermined with same arguments position in registers are grouped together.
 		// ( So that doing checking will be easier. )
-		if !tracee.is_entry() { 
+		if tracee.is_allow_all() | !tracee.is_entry() { 
 			tracee.do_continue();
 			continue;
 		}
-		let registers = tracee.take_regs().unwrap();
-		println!("{}", registers.orig_rax);
 		match call_num{
 			// TODO, implement the map
 			// IO / Memory part

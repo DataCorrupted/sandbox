@@ -325,4 +325,8 @@ impl Tracee {
 	pub fn add_file(&mut self, file: String) {
 		self.file_opened.push(file);
 	}
+
+	pub fn is_allow_all(&self) -> bool {
+		self.allow_all
+	}
 }
