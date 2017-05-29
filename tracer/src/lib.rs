@@ -15,8 +15,11 @@ use registers::Registers;
 #[derive(Debug, Clone)]
 pub struct Tracee {
 	pid: libc::pid_t,
+	allow_all: bool,
 	entry_flag : bool,				// indicate whether it is on entry or exit from a syscall
 	last_syscall: u64,
+	ip_connected: Vec<String>,
+	file_opened: Vec<String>,
 }
 
 impl Tracee {
@@ -24,10 +27,12 @@ impl Tracee {
 	// create a tracee with a pid, and attach the caller to the tracee
 	// return a result tracee on succeeding in creating a process, return Err on failure
 	// Note: when the function return the caller should wait for an execvp signal first
-	pub fn new(args: &Vec<String>) -> Result<Tracee,&'static str>{
+	pub fn new(args: &Vec<String>, all: bool) -> Result<Tracee,&'static str>{
 		// fork a child process
 		let child = unsafe{ libc::fork() };
-		let tracee = Tracee{ pid: child, entry_flag: false, last_syscall: 1023 };
+		let tracee = Tracee{ pid: child, allow_all: all,
+							entry_flag: false, last_syscall: 1023,
+							ip_connected: Vec::new(), file_opened: Vec::new() };
 		// if succes, child process run trace_me
 		match tracee.pid{
 			-1 => {							// failed to fork
@@ -65,8 +70,10 @@ impl Tracee {
 
 	// yet another way to tracee a process with given pid.
 	// It is not recommended.
-	pub fn from(pid: i32) -> Result<Tracee, String>{
-		let tracee = Tracee{ pid : pid, entry_flag: false, last_syscall: 1023  };
+	pub fn from(pid: i32, all: bool) -> Result<Tracee, String>{
+		let tracee = Tracee{ pid : pid, allow_all: all,
+							entry_flag: false, last_syscall: 1023,
+							ip_connected: Vec::new(), file_opened: Vec::new() };
 		match tracee.attach(){
 			Ok(_) => Ok(tracee),
 			Err(_) => Err("tracer: failed to attach.".to_string()), 
@@ -187,7 +194,24 @@ impl Tracee {
 		self.base_request(Request::CONT, 
 							addr as *mut libc::c_void,
 							data as *mut libc::c_void);*/
+		let registers = self.take_regs().unwrap();
 		unsafe{ kill(self.pid, libc::SIGKILL); }
+		println!("your programme just get killed because we \
+			denied your syscall. (syscall number: {}) \n\
+			We denied it because we think this syscall to be dangerous, \n\
+			if you think otherwise, consider add something to your config file.", registers.orig_rax);
+		
+		match registers.orig_rax{
+			42 => {
+				let ip = &self.ip_connected;
+				println!("hint: you were trying to connect to disallowed ip: {}", ip[ip.len()-1]);
+			},
+			2  => {
+				let file = &self.file_opened;
+				println!("hint: you were trying to open file: {}", file[file.len()-1]);
+			},
+			_  => println!("hint: Did you use fork() or kill()? We don't allow it for now."),
+		}
 		exit(0);
 	}
 
@@ -270,7 +294,7 @@ impl Tracee {
 			if self.last_syscall != 59{self.entry_flag = true;}		// if it is on entry
 			else{self.entry_flag = false;}
 		}
-		else if (last_call == call_num){
+		else if last_call == call_num {
 			self.entry_flag = !self.entry_flag;
 		}
 		else {
@@ -284,5 +308,21 @@ impl Tracee {
 		self.last_syscall = call_num;
 		return true;
 	}
+	pub fn print_ip_connected(&self) {
+		for ip in &self.ip_connected {
+			println!("{}", ip);
+		}
+	}
+	pub fn print_file_opened(&self) {
+		for file in &self.file_opened {
+			println!("{}", file);
+		}
+	}
 
+	pub fn add_ip(&mut self, ip: String) {
+		self.ip_connected.push(ip);
+	}
+	pub fn add_file(&mut self, file: String) {
+		self.file_opened.push(file);
+	}
 }
