@@ -6,6 +6,8 @@ use tracer::Tracee;
 
 mod file_conf;
 use file_conf::*;
+mod ip_conf;
+use ip_conf::*;
 
 mod permission;
 use permission::*;
@@ -26,33 +28,48 @@ fn check_process(tracee: &tracer::Tracee) -> bool{
 
 fn main() {
 	// read arguments from argvs and turn it into a vec
+	let mut ip_connected: Vec<String> = Vec::new();		let mut rec_ip = false;
+	let mut file_opened: Vec<String> = Vec::new();		let mut rec_fi = false;
+
 	let mut argvs = Vec::new();
 	let argvs_raw = env::args();
 	if  argvs_raw.len() < 2  {
 		let _ = writeln!(&mut std::io::stderr(), "[Error] safe-box: usage error");
 		return ;
 	}
+	let mut start = false;
 	for x in argvs_raw.skip(1){
-		argvs.push(x);
+		match x.as_str() {
+			"-ip" => { rec_ip = true; },
+			"-file" => { rec_fi = true; },
+			_ => {;},
+		};
+		match x.find("/") {
+			Some(_) => { start = true },
+			None => {;},
+		};
+		if start {
+			argvs.push(x);
+		}
 	}
 
+	// Initlize allowed file/ip
 	let allowed_file = FileConf::new();
+	let allowed_ip = IpConf::new();
+
 	// create a new tracee
 	let mut tracee = Tracee::new(&argvs).unwrap();
 
 	// wait for execvp and start the tracee
 	let _ = tracee.wait_syscall();
 	tracee.do_continue();
-	
 	// wait for every sys call the tracee make and then determine whether the syscall is valid 
 	// TODO if the child make a fork, the box also fork a process to trace the process forked by child
 	loop {
 		let temp = tracee.wait_syscall().unwrap();
-		// println!("caller: {:?}",tracee.is_on_entry());
 		if !temp { break; }
 		if !check_process(&tracee) { break; }		// break the loop when the child exit, handle the sys call
 		let call_num = tracee.get_syscall().unwrap();
-		// println!("{:?}, {}", temp, call_num);
 		// Grouping philosophy: 
 		// Some "musts" with similar function are grouped together. [ by "musts" I mean must pass(like read) or must deny(like chdir) ]
 		// Other undetermined with same arguments position in registers are grouped together.
@@ -62,16 +79,14 @@ fn main() {
 			continue;
 		}
 		let registers = tracee.take_regs().unwrap();
-		if registers.orig_rax == 59 {
-			println!("{:?}", tracee.read_string(registers.rdi));
-		}
 		println!("{}", registers.orig_rax);
 		match call_num{
 			// TODO, implement the map
 			// IO / Memory part
 			0 | 1 | 3			=> { tracee.do_continue(); },		// read | write | close	
 			2					=> { open_request(
-										&tracee, &allowed_file); },	// open
+										&tracee, &allowed_file,
+										&mut file_opened); },		// open
 			4 | 5 | 6			=> { tracee.do_continue(); },		// stat | fstat | lstat
 //			7					=> {;},								// poll
 //			8					=> {;},								// lseek
@@ -94,7 +109,9 @@ fn main() {
 			40					=> { tracee.do_continue(); },		// sendfile
 			// Internet part
 			41					=> { tracee.do_continue(); },		// socket
-			42					=> { connect_request(&tracee); },	// connect
+			42					=> { connect_request(
+										&tracee, &allowed_ip,
+										&mut ip_connected); },		// connect
 			43 | 44 | 45		=> { tracee.do_continue(); },		// accept | sendto | recvfrom
 			46 | 47				=> { tracee.do_continue(); },		// sendmsg | recvmsg
 			48 					=> { tracee.do_continue(); },		// shutdown
@@ -109,6 +126,16 @@ fn main() {
 			_ => {tracee.do_continue();},
 		}
 		// record the syscall before continue
+	}
+	if rec_ip {
+		for ip in ip_connected {
+			println!("{:?}", ip);
+		}
+	}
+	if rec_fi {
+		for file in file_opened {
+			println!("{:?}", file);
+		}
 	}
 
 }

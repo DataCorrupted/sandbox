@@ -4,12 +4,14 @@ pub trait FileName {
 }
 
 impl FileName for String {
+	// This checks if self is a preceeding substring of w.
 	fn is_inside(&self, w: &String) -> bool {
-		match w.find(self.as_str()) {
+		match self.find(w.as_str()) {
 			Some(0) => true,
 			_ => false,
 		}
 	}
+	// shorten() will shorten a filename, leave ./ and ../ out.
 	fn shorten(&self) -> String{
 		let path_vec: Vec<String> = self.clone().split('/').map(|x| x.to_string()).collect();
 		let mut new_path: Vec<String> = Vec::new();
@@ -31,8 +33,8 @@ impl FileName for String {
 
 #[test]
 fn test_substr(){
-	let str1 = "/home/peter/Desktop/".to_string();
-	let str2 = "/home/peter/Desktop/a.out".to_string();
+	let str1 = "/home/peter/Desktop/OS/sandbox/safe-box/target/debug/tls/x86_64/libpthread.so.0".to_string();
+	let str2 = "/home/peter/Desktop/OS/sandbox/".to_string();
 	assert_eq!(str1.is_inside(&str2), true);
 }
 

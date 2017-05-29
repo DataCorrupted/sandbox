@@ -34,15 +34,11 @@ impl FileConf {
 	}
 
 	pub fn is_file_allowed(&self, que: &String) -> bool{
-		for x in self.get_files(){
+		for x in &self.premitted_files {
 			if que.is_inside(&x) {
 				return true;
 			}
 		}
 		return false;
-	}
-
-	fn get_files(&self) -> Vec<String>{
-		self.premitted_files.clone()
 	}
 }

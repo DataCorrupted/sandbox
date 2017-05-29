@@ -37,14 +37,7 @@ impl IpConf {
 	}
 
 	// if the ip is allowed, return true
-	pub fn is_ip_allowed(&self, ip: &Vec<u8>) -> bool{
-		let mut target_ip = String::new();
-		for sub_ip in ip{
-			target_ip.push_str(sub_ip.to_string().as_str());
-			target_ip.push('.');	
-		}
-		let _ = target_ip.pop();				// pop the last '.' out
-
+	pub fn is_ip_allowed(&self, target_ip: &String) -> bool{
 		// check whether the ip is allowed or not
 		for x in self.permitted_ips.clone(){
 			if target_ip.partial_cmp(&x) == Some(Ordering::Equal) {
