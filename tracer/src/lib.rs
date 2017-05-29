@@ -196,10 +196,10 @@ impl Tracee {
 							data as *mut libc::c_void);*/
 		let registers = self.take_regs().unwrap();
 		unsafe{ kill(self.pid, libc::SIGKILL); }
-		println!("your programme just get killed because we \
+		println!("\n\nyour programme just get killed because we \
 			denied your syscall. (syscall number: {}) \n\
-			We denied it because we think this syscall to be dangerous, \n\
-			if you think otherwise, consider add something to your config file.", registers.orig_rax);
+			We denied it because we think this syscall may be dangerous, \n\
+			if you think otherwise, consider add something to your config file.\n", registers.orig_rax);
 		
 		match registers.orig_rax{
 			42 => {
