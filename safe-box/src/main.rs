@@ -4,9 +4,13 @@ use std::env;
 use std::io::Write;
 use tracer::Tracee;
 
+mod file_conf;
+use file_conf::*;
+
 mod permission;
 use permission::*;
 
+mod sub_string;
 
 // return true if the process is still alive
 fn check_process(tracee: &tracer::Tracee) -> bool{
@@ -32,6 +36,7 @@ fn main() {
 		argvs.push(x);
 	}
 
+	let allowed_file = FileConf::new();
 	// create a new tracee
 	let mut tracee = Tracee::new(&argvs).unwrap();
 
@@ -65,7 +70,8 @@ fn main() {
 			// TODO, implement the map
 			// IO / Memory part
 			0 | 1 | 3			=> { tracee.do_continue(); },		// read | write | close	
-			2					=> { open_request(&tracee); },		// open
+			2					=> { open_request(
+										&tracee, &allowed_file); },	// open
 			4 | 5 | 6			=> { tracee.do_continue(); },		// stat | fstat | lstat
 //			7					=> {;},								// poll
 //			8					=> {;},								// lseek

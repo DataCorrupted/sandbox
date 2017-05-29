@@ -2,6 +2,8 @@ extern crate tracer;
 use tracer::Tracee;
 use std::env;
 
+use file_conf::*;
+
 #[derive(Debug)]
 enum PosEval {
 	Out,
@@ -40,13 +42,15 @@ fn check_pos(filename: &String) -> PosEval {
 	}
 }
 
-pub fn open_request(tracee: &Tracee) {
+pub fn open_request(tracee: &Tracee, allowed_file: &FileConf) {
+	let temp = "/home/peter/.rustup/asldfj".to_string();
+	println!("{:?}", allowed_file.is_file_allowed(&temp));
 	let registers = tracee.take_regs().unwrap();
 	let mut filename = tracee.read_string(registers.rdi).unwrap();
 	filename = shorten(filename);
 	match check_pos(&filename) {
 		PosEval::Danger => {
-			match filename.find(".rustup"){
+			match filename.find("/home/peter/.rustup"){
 				Some(_)	=> tracee.do_continue(),
 				None  => tracee.deny(),
 			}
@@ -80,7 +84,7 @@ pub fn connect_request(tracee: &Tracee) {
 		let mut data = tracee.peek_data(sockaddr + offset * 8).unwrap();
 		println!("{:?}", data);
 		let mask = 0xff;
-		for byte_index in 0..8 {
+		for _ in 0..8 {
 			print!("{} ", (data & mask));
 			data = data >> 8;
 		}
