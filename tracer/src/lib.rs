@@ -198,7 +198,7 @@ impl Tracee {
 		unsafe{ kill(self.pid, libc::SIGKILL); }
 		println!("\n\nyour programme just get killed because we \
 			denied your syscall. (syscall number: {}) \n\
-			We denied it because we think this syscall may be dangerous, \n\
+			We denied it because we think this syscall may be dangerous, \n\n\
 			if you think otherwise, consider add something to your config file.\n", registers.orig_rax);
 		
 		match registers.orig_rax{
@@ -212,6 +212,7 @@ impl Tracee {
 			},
 			_  => println!("hint: Did you use fork() or kill()? We don't allow it for now."),
 		}
+		println!();
 		exit(0);
 	}
 
@@ -328,5 +329,38 @@ impl Tracee {
 
 	pub fn is_allow_all(&self) -> bool {
 		self.allow_all
+	}
+
+	// Only use this when it's an open.
+	pub fn take_filename(&self) -> Result<String, String> {
+		let registers = self.take_regs().unwrap();
+		if registers.orig_rax != 2 {
+			Err("Error: take filename when syscall is not 2".to_string())
+		} else {
+			let filename = self.read_string(registers.rdi).unwrap();
+			Ok(filename)
+		}
+	}
+	pub fn take_ip(&self) -> Result<String, String> {
+		let registers = self.take_regs().unwrap();
+		if registers.orig_rax != 42 {
+			Err("Error: take ip when syscall is not 42".to_string())
+		} else {
+			let sockaddr = registers.rsi;
+			let mut data = self.peek_data(sockaddr).unwrap();
+			let mask = 0xff00000000;
+			let mut ip_u8: Vec<u8> = Vec::new();
+			for _ in 4..8 {
+				ip_u8.push(((data & mask) >> 32) as u8);
+				data = data >> 8;
+			}
+			let mut ip_str = String::new();
+			for c in ip_u8{
+				ip_str.push_str(c.to_string().as_str());
+				ip_str.push('.');	
+			}
+			let _ = ip_str.pop();				// pop the last '.' out
+			Ok(ip_str)
+		}
 	}
 }

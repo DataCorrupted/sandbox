@@ -13,6 +13,7 @@ mod permission;
 use permission::*;
 
 mod file_name;
+use file_name::*;
 
 // return true if the process is still alive
 fn check_process(tracee: &tracer::Tracee) -> bool{
@@ -76,7 +77,23 @@ fn main() {
 		// Some "musts" with similar function are grouped together. [ by "musts" I mean must pass(like read) or must deny(like chdir) ]
 		// Other undetermined with same arguments position in registers are grouped together.
 		// ( So that doing checking will be easier. )
-		if tracee.is_allow_all() | !tracee.is_entry() { 
+		if !tracee.is_entry() {
+			tracee.do_continue();
+			continue;
+		}
+		if tracee.is_allow_all() { 
+			let registers = tracee.take_regs().unwrap();
+			match registers.orig_rax {
+				2 => { 
+					let filename = tracee.take_filename().unwrap().shorten();
+					tracee.add_file(filename); 
+				},
+				42 => {
+					let ip = tracee.take_ip().unwrap();
+					tracee.add_ip(ip);
+				},
+				_ => {;},
+			}
 			tracee.do_continue();
 			continue;
 		}

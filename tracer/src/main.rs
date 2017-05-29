@@ -12,7 +12,7 @@ fn main() {
 	for x in env::args().skip(1){
 		args.push(x);
 	}
-	let tracee = tracer::Tracee::new(&args).unwrap();
+	let tracee = tracer::Tracee::new(&args, false).unwrap();
 		// the first sys call should be execvp
 	// the main program shoudl get execvp CONT first, wait first
 		// TODO you should catch sys call here
