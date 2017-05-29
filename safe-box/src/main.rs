@@ -28,7 +28,6 @@ fn check_process(tracee: &tracer::Tracee) -> bool{
 
 fn main() {
 	// read arguments from argvs and turn it into a vec
-	let empty = Vec::new();
 	let mut allow_all = false;
 	let mut ip_connected: Vec<String> = Vec::new();		let mut rec_ip = false;
 	let mut file_opened: Vec<String> = Vec::new();		let mut rec_fi = false;
@@ -88,8 +87,7 @@ fn main() {
 			// IO / Memory part
 			0 | 1 | 3			=> { tracee.do_continue(); },		// read | write | close	
 			2					=> { open_request(
-										&tracee, &allowed_file,
-										&mut file_opened); },		// open
+									&mut tracee, &allowed_file); },	// open
 			4 | 5 | 6			=> { tracee.do_continue(); },		// stat | fstat | lstat
 //			7					=> {;},								// poll
 //			8					=> {;},								// lseek
@@ -113,8 +111,7 @@ fn main() {
 			// Internet part
 			41					=> { tracee.do_continue(); },		// socket
 			42					=> { connect_request(
-										&tracee, &allowed_ip,
-										&mut ip_connected); },		// connect
+									&mut tracee, &allowed_ip); },	// connect
 			43 | 44 | 45		=> { tracee.do_continue(); },		// accept | sendto | recvfrom
 			46 | 47				=> { tracee.do_continue(); },		// sendmsg | recvmsg
 			48 					=> { tracee.do_continue(); },		// shutdown
@@ -122,23 +119,19 @@ fn main() {
 			51 | 52				=> { tracee.do_continue(); },		// getsockname | getpeername
 			53					=> { tracee.do_continue(); },		// socketpair
 			54 | 55				=> { tracee.do_continue(); },		// setsockopt | getsockopt
-			56 | 57 | 58		=> { tracee.deny(&empty); },				// fork | vfork, we don't allow it for now.
+			56 | 57 | 58		=> { tracee.deny(); },				// fork | vfork, we don't allow it for now.
 			59 					=> { execve_request(&tracee); },	// execve
 			60 					=> { tracee.do_continue(); }		// exit, why bother preventing someone from suicide?
-			62					=> { tracee.deny(&empty); },				// kill, we always deny it.	
+			62					=> { tracee.deny(); },				// kill, we always deny it.	
 			_ => {tracee.do_continue();},
 		}
 		// record the syscall before continue
 	}
 	if rec_ip {
-		for ip in ip_connected {
-			println!("{:?}", ip);
-		}
+		tracee.print_ip_connected();
 	}
 	if rec_fi {
-		for file in file_opened {
-			println!("{:?}", file);
-		}
+		tracee.print_file_opened();
 	}
 
 }

@@ -25,18 +25,17 @@ fn check_pos(filename: &String) -> PosEval {
 	}
 }
 
-pub fn open_request(tracee: &Tracee, allowed_file: &FileConf,
-					file_opened: &mut Vec<String>) {
+pub fn open_request(tracee: &mut Tracee, allowed_file: &FileConf) {
 	let registers = tracee.take_regs().unwrap();
 	let mut filename = tracee.read_string(registers.rdi).unwrap();
 	filename = filename.shorten();
-	file_opened.push(filename.clone());
+	tracee.add_file(filename.clone());
 
 	match check_pos(&filename) {
 		PosEval::Danger => {
 			match allowed_file.is_file_allowed(&filename){
 				true	=> tracee.do_continue(),
-				false	=> tracee.deny(file_opened),
+				false	=> tracee.deny(),
 			}
 			
 		},
@@ -52,8 +51,7 @@ pub fn execve_request(tracee: &Tracee) {
 	filename = filename.shorten();
 	match check_pos(&filename) {
 		PosEval::Danger => {
-			let temp = Vec::new();
-			tracee.deny(&temp);
+			tracee.deny();
 		},
 		PosEval::In | PosEval::Out => {
 			tracee.do_continue();	
@@ -61,8 +59,7 @@ pub fn execve_request(tracee: &Tracee) {
 	};
 }
 
-pub fn connect_request(tracee: &Tracee, allowed_ip: &IpConf,
-						ip_connected: &mut Vec<String>) {
+pub fn connect_request(tracee: &mut Tracee, allowed_ip: &IpConf) {
 	let registers = tracee.take_regs().unwrap();
 	let sockaddr = registers.rsi;
 	let addrlen = registers.rdx;
@@ -85,9 +82,9 @@ pub fn connect_request(tracee: &Tracee, allowed_ip: &IpConf,
 		ip_str.push('.');	
 	}
 	let _ = ip_str.pop();				// pop the last '.' out
-	ip_connected.push(ip_str.clone());
+	tracee.add_ip(ip_str.clone());
 	match allowed_ip.is_ip_allowed(&ip_str){
 		true => tracee.do_continue(),
-		false => tracee.deny(ip_connected),
+		false => tracee.deny(),
 	};
 }
