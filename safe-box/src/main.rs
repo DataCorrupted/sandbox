@@ -42,21 +42,26 @@ fn main() {
 		let _ = writeln!(&mut std::io::stderr(), "use --help for more help.");
 		exit(0);
 	}
+
+	// reading arguments
 	let mut start = false;
 	for x in argvs_raw.skip(1){
-		match x.as_str() {
-			"--help" => { print_help(); exit(0); }
-			"-ip" => { rec_ip = true; },
-			"-file" => { rec_fi = true; },
-			"-aa" => { allow_all = true; },
-			_ => {;},
-		};
-		match x.find("/") {
-			Some(_) => { start = true },
-			None => {;},
-		};
-		if start {
-			argvs.push(x);
+		match start {
+			false => {			// dealing with arguments
+				match x.as_str() {
+					"--help" => { print_help(); exit(0); }
+					"-ip" => { rec_ip = true; },
+					"-file" => { rec_fi = true; },
+					"-aa" => { allow_all = true; },
+					_ => {			// end of arguments of sandbox
+						argvs.push(x);
+						start = true;
+					},
+				};
+			},
+			true => {
+				argvs.push(x);
+			},
 		}
 	}
 
