@@ -152,11 +152,10 @@ fn main() {
 	if rec_fi {
 		tracee.print_file_opened();
 	}
-
 }
 
 fn print_help() {
-	let _ = writeln!(&mut std::io::stderr(), 
+	let _ = writeln!(&mut std::io::stderr(), "");
 	let _ = writeln!(&mut std::io::stderr(), "sandbox");
 	let _ = writeln!(&mut std::io::stderr(), "by Perer Rong & Jianxiong Cai");
 	let _ = writeln!(&mut std::io::stderr(), "");
