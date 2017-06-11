@@ -1,0 +1,122 @@
+\documentclass[conference,compsoc]{IEEEtran}
+% Some/most Computer Society conferences require the compsoc mode option,
+% but others may want the standard conference format.
+%
+% If IEEEtran.cls has not been installed into the LaTeX system files,
+% manually specify the path to it like:
+% \documentclass[conference,compsoc]{../sty/IEEEtran}
+
+
+% *** CITATION PACKAGES ***
+%
+\ifCLASSOPTIONcompsoc
+  % IEEE Computer Society needs nocompress option
+  % requires cite.sty v4.0 or later (November 2003)
+  \usepackage[nocompress]{cite}
+\else
+  % normal IEEE
+  \usepackage{cite}
+\fi
+
+\ifCLASSINFOpdf
+  % \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../pdf/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+  % will default to the driver specified in the system graphics.cfg if no
+  % driver is specified.
+  % \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+\begin{document}
+\title{
+	OS Course Project \\ 
+	Software sandbox using syscall prevention aproach
+}
+
+
+% author names and affiliations
+% use a multiple column layout for up to three different
+% affiliations
+\author{
+	\IEEEauthorblockN{Yuyang Rong}
+	\IEEEauthorblockA{
+		School of Information Science and Technology \\
+		Shanghaitech University \\
+		Student ID: 69850764 \\
+	}
+\and
+	\IEEEauthorblockN{Jianxiong Cai}
+	\IEEEauthorblockA{
+		School of Information Science and Technology \\
+		Shanghaitech University \\
+		Student ID: xxxxxxxxx \\
+	}
+}
+
+\maketitle
+
+% As a general rule, do not put math, special symbols or citations
+% in the abstract
+\begin{abstract}
+	The abstract goes here.
+\end{abstract}
+
+\section{Introduction}
+	% no \IEEEPARstart
+	This demo file is intended to serve as a ``starter file''
+	for IEEE Computer Society conference papers produced under \LaTeX\ using
+	IEEEtran.cls version 1.8b and later.
+	% You must have at least 2 lines in the paragraph with the drop letter
+	% (should never be an issue)
+	I wish you the best of success.
+
+	\hfill mds
+	 
+	\hfill August 26, 2015
+
+		\subsection{Subsection Heading Here}
+		Subsection text here.
+
+
+			\subsubsection{Subsubsection Heading Here}
+			Subsubsection text here.
+
+
+\section{Conclusion}
+	The conclusion goes here.\cite{IEEEexample:shellCTANpage}
+
+\ifCLASSOPTIONcompsoc
+  % The Computer Society usually uses the plural form
+  \section*{Acknowledgments}
+\else
+  % regular IEEE prefers the singular form
+  \section*{Acknowledgment}
+\fi
+
+
+The authors would like to thank...
+
+
+
+\bibliographystyle{IEEEtran}
+\bibliography{OS_cite}
+
+
+% that's all folks
+\end{document}
+
+
