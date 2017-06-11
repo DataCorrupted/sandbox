@@ -1,3 +1,4 @@
+rm *.bbl *.blg *.log *.aux
 latex OS_report.tex
 bibtex OS_report.aux
 latex OS_report.tex
