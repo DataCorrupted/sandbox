@@ -8,3 +8,5 @@ dvips OS_report.dvi
 ps2pdf OS_report.ps
 rm *.dvi *.ps
 mv OS_report.pdf ../
+xdg-open ../OS_report.pdf
+clear
