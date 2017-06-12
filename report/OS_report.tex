@@ -10,31 +10,31 @@
 % *** CITATION PACKAGES ***
 %
 \ifCLASSOPTIONcompsoc
-  % IEEE Computer Society needs nocompress option
-  % requires cite.sty v4.0 or later (November 2003)
-  \usepackage[nocompress]{cite}
+	% IEEE Computer Society needs nocompress option
+	% requires cite.sty v4.0 or later (November 2003)
+	\usepackage[nocompress]{cite}
 \else
-  % normal IEEE
-  \usepackage{cite}
+	% normal IEEE
+	\usepackage{cite}
 \fi
 
 \ifCLASSINFOpdf
-  % \usepackage[pdftex]{graphicx}
-  % declare the path(s) where your graphic files are
-  % \graphicspath{{../pdf/}{../jpeg/}}
-  % and their extensions so you won't have to specify these with
-  % every instance of \includegraphics
-  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+	% \usepackage[pdftex]{graphicx}
+	% declare the path(s) where your graphic files are
+	% \graphicspath{{../pdf/}{../jpeg/}}
+	% and their extensions so you won't have to specify these with
+	% every instance of \includegraphics
+	% \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
 \else
-  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
-  % will default to the driver specified in the system graphics.cfg if no
-  % driver is specified.
-  % \usepackage[dvips]{graphicx}
-  % declare the path(s) where your graphic files are
-  % \graphicspath{{../eps/}}
-  % and their extensions so you won't have to specify these with
-  % every instance of \includegraphics
-  % \DeclareGraphicsExtensions{.eps}
+	% or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+	% will default to the driver specified in the system graphics.cfg if no
+	% driver is specified.
+	% \usepackage[dvips]{graphicx}
+	% declare the path(s) where your graphic files are
+	% \graphicspath{{../eps/}}
+	% and their extensions so you won't have to specify these with
+	% every instance of \includegraphics
+	% \DeclareGraphicsExtensions{.eps}
 \fi
 
 
@@ -72,44 +72,65 @@
 % As a general rule, do not put math, special symbols or citations
 % in the abstract
 \begin{abstract}
-	The abstract goes here.
+	How to grade a students programming homework has become a tricky problem since the grading server have to protect itself from being hacked by student's homework, and to protect test case from being poached by students. To be general, a safe environment is needed for user to run untrusted program where user and his data can be safe. We propose that we track every syscall the untrusted program issues, thus we can trace it's movement and status and make sure it remain trustworthy. 
 \end{abstract}
 
-\section{Introduction}
-	% no \IEEEPARstart
-	This demo file is intended to serve as a ``starter file''
-	for IEEE Computer Society conference papers produced under \LaTeX\ using
-	IEEEtran.cls version 1.8b and later.
-	% You must have at least 2 lines in the paragraph with the drop letter
-	% (should never be an issue)
-	I wish you the best of success.
+\section{Motivation}
+	\subsection{Real life problem}
+		\par
+			From gradebot's point of view, student's homework should be considered untrustworthy. However, in order to do the grading job, the server have to run all students programs.
+		\par
+			Currently there are many malware isolation applications, one of the most famous being lxd. We dived into lxd and realized that it's designed based on the following principles:
+		\par 
+			\emph{\textbf{
+				If you can't see it, you can't destroy it. You can't tempering with things you can't see.
+			}}
+		\par
+			Good as this principle is, it causes unintended inconvenience. For example, Rust compiler have to check github.com for extern crates used by students program. But to make sure the data is safe, network access has been baned by lxd. Such situation can be really problematic.
+		\par
+			Thus we realized we need something better to help cope with the situation. We want network, file system, etc be available without damaging user's computer or server. That's how we started our project.
+		\subsection{Principles}
+			\par
+				So we came to our solution that we will show the program the whole picture, it can access all file system or network, but we can't allow everything, so we have the following philosophy:
+			\par
+				\emph{\textbf{
+					If you have to ask for my permission for every syscall you make, you can't damage things because I will not allow it.
+				}}
+	\subsection{Difficulties}
+		\par
+			Nice as tracing every syscall sounds, it's hard as soon as we realized the real scale the problem is. 
+		\subsubsection{Outnumbered}
+			\par 
+				The number of syscall are enormous, far beyond our expectation. For example, in x86\_64 architecture, there are in total 328 syscalls. At first we though we have to write 328 different policies to deal with these syscalls, but later we realized that there is a connection between these syscalls. Certain syscalls have to be made before others. For example, each and every program have to \emph{ open() } a file before it can read or write it. Or, \emph{ socket() } have to be established before a network connection can be possible.
+			\par
+				So we decided to chock the untrusted program on those syscalls, to put pressure on where it hurts. For example, we allow \emph{ close() }, \emph{ read() } directly, but we carefully examine \emph{ open() }, whether the file is allowed, what it is opened for, etc.
+			\par 
+				In this way, we narrowed our work to much fewer syscalls like \emph{open()} and \emph{connect()}
+		\subsubsection{Killing a children?}
+		\par 
+			Not much program nowadays do not do \emph{ fork() } anymore, even students' homework use this syscall here or there. When a program \emph{ fork() }, tracing programming do \emph{ fork() } too, and immediately begin to trace the child just forked by the untrusted program.
+		\par
+			The problem is, When a untrusted program \emph{kill()} it's child, or one of it's children \emph{kill()} another, the tracer can't tell the difference. Tracer have no way to know the \emph{pid} about to be killed is another user program or one of one of tracee's children. Tracer program have to do inter communication to know what really happened.
+		\par
+			Doing inter communication between tracers can be rather difficult can gains little, we then came up with a new solution that we change tracee's \emph{uid}, thus every tracee's child will have the same \emph{uid} and they can feel free to \emph{kill()} each other, but once they try to \emph{kill()} anyone else, operating system will stop them.
 
-	\hfill mds
-	 
-	\hfill August 26, 2015
 
-		\subsection{Subsection Heading Here}
-		Subsection text here.
+\section{Implementation}
 
+\section{Rust Experience}
 
-			\subsubsection{Subsubsection Heading Here}
-			Subsubsection text here.
-
-
+\section{Future Work}
 \section{Conclusion}
 	The conclusion goes here.\cite{SecSandBox}
 
 \ifCLASSOPTIONcompsoc
-  % The Computer Society usually uses the plural form
-  \section*{Acknowledgments}
+	% The Computer Society usually uses the plural form
+	\section*{Acknowledgments}
 \else
-  % regular IEEE prefers the singular form
-  \section*{Acknowledgment}
+	% regular IEEE prefers the singular form
+	\section*{Acknowledgment}
 \fi
-
-
-The authors would like to thank...
-
+	We would like to thank Prof. Chen for his brilliant course and his guidance for our project. He provided us with such a great opportunity to do system programming and rust programming ourselves. 
 
 
 \bibliographystyle{IEEEtran}
