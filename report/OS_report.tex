@@ -1,41 +1,13 @@
+%% OS II Project Report Latex file.
+%% Completed By Yuyang Rong(rongyy@shanghaitech.edu.cn) and 
+%% Jianxiong Cai(caijx@shanghaitech.edu.cn)
+%%
+%% To edit this file, please use indentions with tab size of 2.
+%%
+
 \documentclass[conference,compsoc]{IEEEtran}
-% Some/most Computer Society conferences require the compsoc mode option,
-% but others may want the standard conference format.
-%
-% If IEEEtran.cls has not been installed into the LaTeX system files,
-% manually specify the path to it like:
-% \documentclass[conference,compsoc]{../sty/IEEEtran}
-
-
-% *** CITATION PACKAGES ***
-%
-\ifCLASSOPTIONcompsoc
-	% IEEE Computer Society needs nocompress option
-	% requires cite.sty v4.0 or later (November 2003)
-	\usepackage[nocompress]{cite}
-\else
-	% normal IEEE
-	\usepackage{cite}
-\fi
-
-\ifCLASSINFOpdf
-	% \usepackage[pdftex]{graphicx}
-	% declare the path(s) where your graphic files are
-	% \graphicspath{{../pdf/}{../jpeg/}}
-	% and their extensions so you won't have to specify these with
-	% every instance of \includegraphics
-	% \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
-\else
-	% or other class option (dvipsone, dvipdf, if not using dvips). graphicx
-	% will default to the driver specified in the system graphics.cfg if no
-	% driver is specified.
-	% \usepackage[dvips]{graphicx}
-	% declare the path(s) where your graphic files are
-	% \graphicspath{{../eps/}}
-	% and their extensions so you won't have to specify these with
-	% every instance of \includegraphics
-	% \DeclareGraphicsExtensions{.eps}
-\fi
+\usepackage{cite}
+\usepackage{listings}
 
 
 % correct bad hyphenation here
@@ -43,8 +15,8 @@
 
 \begin{document}
 \title{
-	OS Course Project \\ 
-	Software sandbox using syscall prevention aproach
+	OS Course Project: Safebox\\ 
+	Software fault isolation using syscall prevention approach
 }
 
 
@@ -55,14 +27,14 @@
 	\IEEEauthorblockN{Yuyang Rong}
 	\IEEEauthorblockA{
 		School of Information Science and Technology \\
-		Shanghaitech University \\
+		ShanghaiTech University \\
 		Student ID: 69850764 \\
 	}
 \and
 	\IEEEauthorblockN{Jianxiong Cai}
 	\IEEEauthorblockA{
 		School of Information Science and Technology \\
-		Shanghaitech University \\
+		ShanghaiTech University \\
 		Student ID: xxxxxxxxx \\
 	}
 }
@@ -72,64 +44,212 @@
 % As a general rule, do not put math, special symbols or citations
 % in the abstract
 \begin{abstract}
-	How to grade a students programming homework has become a tricky problem since the grading server have to protect itself from being hacked by student's homework, and to protect test case from being poached by students. To be general, a safe environment is needed for user to run untrusted program where user and his data can be safe. We propose that we track every syscall the untrusted program issues, thus we can trace it's movement and status and make sure it remain trustworthy. 
+	How to grade a students programming homework has become a tricky problem since the grading server have to protect itself from being hacked by student's homework, and to protect test case from being poached by students. 
+	To be general, a safe environment is needed for user to run untrusted program where user and his data can be safe. 
+	We propose that we track every syscall the untrusted program issues, thus we can trace it's movement and status and make sure it remain trustworthy. 
 \end{abstract}
 
 \section{Motivation}
 	\subsection{Real life problem}
 		\par
-			From gradebot's point of view, student's homework should be considered untrustworthy. However, in order to do the grading job, the server have to run all students programs.
+			From gradebot's point of view, student's homework should be considered untrustworthy. 
+			However, in order to do the grading job, the server have to run all students programs.
 		\par
-			Currently there are many malware isolation applications, one of the most famous being lxd. We dived into lxd and realized that it's designed based on the following principles:
+			Currently there are many malware isolation applications, one of the most famous being lxd. 
+			We dived into lxd and realized that it's designed based on the following principles:
 		\par 
 			\emph{\textbf{
-				If you can't see it, you can't destroy it. You can't tempering with things you can't see.
+			%% Here I need to figure out how to use cite form.
+				If you can't see it, you can't destroy it. 
+				You can't tempering with things you can't see.
 			}}
 		\par
-			Good as this principle is, it causes unintended inconvenience. For example, Rust compiler have to check github.com for extern crates used by students program. But to make sure the data is safe, network access has been baned by lxd. Such situation can be really problematic.
+			Good as this principle is, it causes unintended inconvenience. 
+			For example, Rust compiler have to check github.com for extern crates used by students program. 
+			But to make sure the data is safe, network access has been baned by lxd. 
+			Such situation can be really problematic.
 		\par
-			Thus we realized we need something better to help cope with the situation. We want network, file system, etc be available without damaging user's computer or server. That's how we started our project.
+			Thus we realized we need something better to help cope with the situation. 
+			We want network, file system, etc be available without damaging user's computer or server. 
+			That's how we started our project.
 		\subsection{Principles}
 			\par
-				So we came to our solution that we will show the program the whole picture, it can access all file system or network, but we can't allow everything, so we have the following philosophy:
+				So we came to our solution. 
+				But first we have a basic assumption:
+			\par
+				\emph{\textbf{
+					An application can do little harm if its access to the underlying operating system is appropriately restricted.\cite{SecSandBox}
+				}}
+			\par
+				After we read the reference paper we find this assumption ideal and solid. 
+				So based on that we derived the following philosophy:
 			\par
 				\emph{\textbf{
 					If you have to ask for my permission for every syscall you make, you can't damage things because I will not allow it.
 				}}
-	\subsection{Difficulties}
-		\par
-			Nice as tracing every syscall sounds, it's hard as soon as we realized the real scale the problem is. 
-		\subsubsection{Outnumbered}
-			\par 
-				The number of syscall are enormous, far beyond our expectation. For example, in x86\_64 architecture, there are in total 328 syscalls. At first we though we have to write 328 different policies to deal with these syscalls, but later we realized that there is a connection between these syscalls. Certain syscalls have to be made before others. For example, each and every program have to \emph{ open() } a file before it can read or write it. Or, \emph{ socket() } have to be established before a network connection can be possible.
 			\par
-				So we decided to chock the untrusted program on those syscalls, to put pressure on where it hurts. For example, we allow \emph{ close() }, \emph{ read() } directly, but we carefully examine \emph{ open() }, whether the file is allowed, what it is opened for, etc.
+				We will be tracing every syscall the untrusted program is issuing and decide if it's a allowance or a denial.
+	\subsection{Difficulties}
+		\subsubsection{Outnumbered}
+			\par
+				Nice as tracing every syscall sounds, it's hard as soon as we realized the real scale the problem is. 
 			\par 
-				In this way, we narrowed our work to much fewer syscalls like \emph{open()} and \emph{connect()}
-		\subsubsection{Killing a children?}
-		\par 
-			Not much program nowadays do not do \emph{ fork() } anymore, even students' homework use this syscall here or there. When a program \emph{ fork() }, tracing programming do \emph{ fork() } too, and immediately begin to trace the child just forked by the untrusted program.
-		\par
-			The problem is, When a untrusted program \emph{kill()} it's child, or one of it's children \emph{kill()} another, the tracer can't tell the difference. Tracer have no way to know the \emph{pid} about to be killed is another user program or one of one of tracee's children. Tracer program have to do inter communication to know what really happened.
-		\par
-			Doing inter communication between tracers can be rather difficult can gains little, we then came up with a new solution that we change tracee's \emph{uid}, thus every tracee's child will have the same \emph{uid} and they can feel free to \emph{kill()} each other, but once they try to \emph{kill()} anyone else, operating system will stop them.
+				The number of syscall are enormous, far beyond our expectation. 
+				For example, in x86\_64 architecture, there are in total 328 syscalls. 
+				At first we though we have to write 328 different policies to deal with these syscalls, but later we realized that there is a connection between these syscalls. 
+				Certain syscalls have to be made before others. 
+				For example, each and every program have to \emph{ open() } a file before it can read or write it. 
+				Or, \emph{ socket() } have to be established before a network connection can be possible.
+			\par
+				So we decided to chock the untrusted program on those syscalls, to put pressure on where it hurts. 
+				For example, we allow \emph{ close() }, \emph{ read() } directly, but we carefully examine \emph{ open() }, whether the file is allowed, what it is opened for, etc.
+			\par 
+				In this way, we narrowed our work to much fewer syscalls like \emph{open()} and \emph{connect()}.
+		\subsubsection{Killing a children}
+			\par 
+				Not much program nowadays do not do \emph{ fork() } anymore, even students' homework use this syscall here or there. 
+				When a program \emph{ fork() }, tracing program do \emph{ fork() } too, and immediately begin to trace the child just forked by the untrusted program. 
+				After these finishes, we will start both parent and child.
+			\par
+				The problem is, When a untrusted program \emph{kill()} it's child, or one of it's children \emph{kill()} another, the tracer can't tell the difference. 
+				Tracer have no way to know the \emph{pid} about to be killed is another user program or one of one of tracee's children. 
+				Tracer program have to do inter communication to know what really happened.
+			\par
+				Doing inter communication between tracers can be rather difficult can gains little, we then came up with a new solution that we change tracee's \emph{uid}, thus every tracee's child will have the same \emph{uid} and they can feel free to \emph{kill()} each other, but once they try to \emph{kill()} anyone else, operating system will stop them.
+
 
 
 \section{Implementation}
 
+
+	\subsection{ptrace}
+
+		\par
+			Linux provides a function:\\
+				\begin{center}
+				\emph{ptrace(request, pid, addr, data)}
+				\end{center}
+			This function can be called both by untrusted program or tracing program. 
+			In user manual, the program being traced is called \emph{Tracee}, we will call it tracee from now on.
+		\par 
+			What ptrace does is it stops syscall and have the privilege to examine memory, registers, etc.\ the tracee is using. 
+			Every time the tracer calls this function, it will be put to wait. 
+			It will wake up on two conditions: either tracee issues an syscall then OS wakes tracer up and continue doing the syscall until tracer says so by a \emph{ptrace(CONT, pid, void, void)} call or OS finished a syscall it wakes tracer up before it hands control to tracee.
+
+	\subsection{Architecture \& System choice}
+
+		\par
+			ptrace may have the ability to alter registers, it don't necessarily have the ability to know the syscall the tracee is making. 
+			Different architectures store syscall number and syscall return value in different registers. 
+			For example in MIPS they are stored in \emph{\$a0} x86 \emph{\%eax}, x86\_64 \emph{\%rax}.
+		\par
+			MISP is not widely used in PC, it's mostly used in embedded processors and they don't need that much software isolation. 
+			Besides, it rather an old architecture.
+		\par 
+			We considered making a sandbox on x86, but it's an old architecture too. 
+			We totally give it up because we realized that x86\_64 can run x86 program too, so if we use x86\_64 architecture, only slight changes shall be made then sandbox can run on x86.
+		\par 
+			We decided we will use x86\_64 architecture since this is the most widely used architecture, easier for us to program when both of us are using x86\_64 architecture laptop.
+
+	\subsection{Programming language}
+
+		\par 
+			\emph{ptrace()} is a C function, so we thought let's do it in C. 
+			But after we carefully examined several programming languages we decided to use Rust.
+		\subsubsection{C}
+			\par
+				C is the first programming language came into our mind. 
+				But after we toyed a little with C and \emph{ptrace()} we realized that \emph{ptrace()} is rather a complicated function, we want to encapsulate it to make our life easier. 
+				However, C is not OOP, so we abandoned it and started to consider C++.
+		\subsubsection{C++}
+			\par
+				C++ is good at encapsulation, but too week at type system. 
+				We build this sandbox to be safe, not to introduce more volubilities. 
+				So instead of C++ we started looking Rust.
+		\subsubsection{Rust}
+			\par
+				Rust have it's pros and cons too. 
+				There is not \emph{ptrace()} implemented in Rust, we can only use this function through extern crate \emph{libc}, so we are forced to add a lot of \emph{unsafe} to our code. 
+				However, life time system and ownership system allow us to code more confidently.
+
+	\subsection{Encapsulation}
+		\par 
+			We found a finished ptrace library on crates.io, but it couldn't compile because of certain dependencies are missing. 
+			We tried to fix it, but we failed because the lacking dependencies have been removed by Rust team.
+		\par
+			So we decide to write ourselves a library to do that job. 
+			We created a structure contains a pid and other necessary components listed below:
+			\begin{verbatim}
+				pub struct Tracee {
+					  pid: libc::pid_t,
+					  allow_all: bool,
+					  entry_flag : bool,			
+					  last_syscall: u64,
+					  ip_connected: Vec<String>,
+					  file_opened: Vec<String>,
+				}
+			\end{verbatim}
+		\par
+			\emph{allow\_all} is a sign in case the user don't want any protection. 
+			\emph{entry\_flag} shows if the tracee is exiting a syscall or entering. 
+			The last two vectors are just logs used to tell tracee's behavior.
+		\par
+			We can initialize a Tracee by telling the command so that the constructor will call \emph{fork()} first and the child will call \emph{ptrace(TRACEME, pid, void, void)}, thus a program is set up and ready to go.(The program won't start until tracer says so.)
+		\par
+			We now provide interface for certain widely used functions, like \emph{take\_regs()} and \emph{do\_continue()}. 
+			These functions do not require any arguments but pid, using \emph{ptrace()} to do that can be laborious, so we finished the interface.
+	\subsection{The framework}
+		\subsubsection{Reading configuration file}
+			Currently Safebox have 2 configuration files, the ip address and file allowed to access.
+			%% Ernest goes here.
+		\subsubsection{Initialize the tracee}
+			\par
+				Good thing is this have been done in our own library, all we need to do is to take command from command line and put them into a vector, give that to constructor. 
+			\par
+				After construction, the tracee is halted at the first \emph{execvp()}, user have to manually start the tracee by calling \emph{tracee.do\_continue()}
+
+		\subsubsection{Tracing according to syscall}
+			\par
+				The main program goes into a loop which will not break until the tracee is stopped because it exited instead of an issue of syscall.
+				In the loop we will intercept every syscall, each twice.(In and out)
+				Now we don't do any examine on return value of a syscall so we directly allow it by saying \emph{tracee.do\_continue)()}.
+				However, if the tracee is entering a syscall, that's another story.
+				We will make decisions depend on the syscall the tracee is making.
+		\subsubsection{Allow or Deny}
+			\par
+				Currently we focus on two syscalls, \emph{open()} and \emph{connect()}
+			\par
+				In terms of \emph{open}, we only allow files inside current working directory, outside /home or specifically permitted in configuration file.
+				We believe if tracee is toying files inside current working directory, little harm can be made.
+				If tracee tries to tank files outside /home, operating system will prevent it.
+
+
+
 \section{Rust Experience}
+	After finish this project, we now have a better feeling about Rust programming language. It's pros and cons we will list our feelings here.
+	\subsection{Pros}
+		\subsubsection{Yuyang Rong}
+			\par
+				I really like Trait system, it allows me to add additional method to predefined types. 
+				When doing file path parsing, I really need a new method added to String type, Trait system allows it.
+	\subsection{Cons}
+		\subsubsection{Yuyang Rong}
+			\par
+				Although Rust is said to be a system programming language, it still lack certain "system" interface.
+				We have to heavily rely on \emph{libc} to do the programming and have tons of \emph{unsafe}s in it, which is not that desirable. 				
 
-\section{Future Work}
+\section{Limitations \& Future Work}
+
+
 \section{Conclusion}
-	The conclusion goes here.\cite{SecSandBox}
 
-\ifCLASSOPTIONcompsoc
-	% The Computer Society usually uses the plural form
-	\section*{Acknowledgments}
-\else
-	% regular IEEE prefers the singular form
-	\section*{Acknowledgment}
-\fi
+	The conclusion goes here.
+
+\section{Availability}
+
+	Please check github.com for our Safebox.
+
+\section*{Acknowledgment}
 	We would like to thank Prof. Chen for his brilliant course and his guidance for our project. He provided us with such a great opportunity to do system programming and rust programming ourselves. 
 
 
