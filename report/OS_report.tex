@@ -10,6 +10,7 @@
 \usepackage{listings}
 
 
+
 % correct bad hyphenation here
 \hyphenation{op-tical net-works semi-conduc-tor}
 
@@ -35,7 +36,7 @@
 	\IEEEauthorblockA{
 		School of Information Science and Technology \\
 		ShanghaiTech University \\
-		Student ID: xxxxxxxxx \\
+		Student ID: 67771603 \\
 	}
 }
 
@@ -222,7 +223,28 @@
 				In terms of \emph{open}, we only allow files inside current working directory, outside /home or specifically permitted in configuration file.
 				We believe if tracee is toying files inside current working directory, little harm can be made.
 				If tracee tries to tank files outside /home, operating system will prevent it.
-
+				
+		\subsection{Network}
+		\par
+		There are different ways to limit the access of certain program to network. LXD, the Linux Containers, limit the network access by configuring the whole container, all programs in one container will either have network access or not. Taking advantage of syscall-level sandbox,  every process is separate, thus monitoring one particular  program's network connection is possible. Besides, by implementing in this way, the sandbox can allow the untrusted program only be able to connect to certain IP address.
+		\par
+		There are four syscall a client program would use to make a network connection. 
+		\begin{enumerate}
+		\item socket
+			\par
+			get a new socket
+		\item connect
+			\par
+			connect the socket to a remote IP
+		\item receive from / send to
+			\par
+			communicating with the remote IP though the socket
+		\end{enumerate}
+		\par 
+		Because the connect syscall is the only syscall whose arguments contain the IP address, tracing this syscall can get the IP address, then the sandbox can decide whether this connection is allowed or not. 
+		\par
+		For example, if the untrusted program is only allowed to connect to github.com, when the sandbox found the IP address which untrusted program is trying to connect to is beyond the white list, this syscall will be rejected.
+		
 
 
 \section{Rust Experience}
@@ -239,6 +261,10 @@
 				We have to heavily rely on \emph{libc} to do the programming and have tons of \emph{unsafe}s in it, which is not that desirable. 				
 
 \section{Limitations \& Future Work}
+	\subsection{Network}
+		Currently, the sandbox only support untrusted program making connect as a client. If the untrusted program is a server application, the syscall it would use would use would be socket, bind, listen, and accept. 
+		\par
+		In the syscall "accept", the address of client on the other end of the connection would be provided, so it is reasonable to monitor this syscall to decide whether the connection should be allowed or not.
 
 
 \section{Conclusion}
