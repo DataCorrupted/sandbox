@@ -4,6 +4,7 @@ use std::env;
 use std::io::Write;
 use tracer::Tracee;
 use std::process::exit;
+use std::io;
 
 mod file_conf;
 use file_conf::*;
@@ -37,12 +38,35 @@ fn main() {
 	let mut argvs = Vec::new();
 	let argvs_raw = env::args();
 	if  argvs_raw.len() < 2  {
-		let _ = writeln!(&mut std::io::stderr(), "[Error] safe-box: usage error");
+		let _ = writeln!(&mut std::io::stderr(), "\n[Error] safe-box: usage error");
 		let _ = writeln!(&mut std::io::stderr(), "usage: ./safe-box [option] <tracee>");
-		let _ = writeln!(&mut std::io::stderr(), "use --help for more help.");
+		let _ = writeln!(&mut std::io::stderr(), "use --help for more help.\n");
 		exit(0);
 	}
 
+// Create a user. uid allocated. find it. 
+// Do a setup.
+
+	if unsafe{libc::getuid()} != 0 {
+		let _ = writeln!(&mut std::io::stderr(), "\nSorry, but you need to be root to run safe-box.");
+		let _ = writeln!(&mut std::io::stderr(), "You can still use this program if you are not root,");
+		let _ = writeln!(&mut std::io::stderr(), "But we can't guarantee that your user's file is safe.");
+		let _ = write!(&mut std::io::stderr(), "Would you like to continue? [y/n] ");
+		
+		let mut input = String::new();
+		match io::stdin().read_line(&mut input) {
+			Err(_) => {
+				let _ = writeln!(&mut std::io::stderr(),"failed to read. terminate.");
+				exit(0);
+			}
+			_	=> {let _ = input.pop();},
+		}
+		if input != "y".to_string() && input != "Y".to_string() {
+			exit(0);
+		} else {
+			println!();
+		}
+	}
 	// reading arguments
 	let mut start = false;
 	for x in argvs_raw.skip(1){
@@ -111,7 +135,7 @@ fn main() {
 			// IO / Memory part
 			0 | 1 | 3			=> { tracee.do_continue(); },		// read | write | close	
 			2					=> { open_request(
-									&mut tracee, &allowed_file); },	// open
+									&mut tracee, &allowed_file);},	// open
 			4 | 5 | 6			=> { tracee.do_continue(); },		// stat | fstat | lstat
 //			7					=> {;},								// poll
 //			8					=> {;},								// lseek
@@ -143,10 +167,17 @@ fn main() {
 			51 | 52				=> { tracee.do_continue(); },		// getsockname | getpeername
 			53					=> { tracee.do_continue(); },		// socketpair
 			54 | 55				=> { tracee.do_continue(); },		// setsockopt | getsockopt
-//			56 | 57 | 58		=> { tracee.deny(); },				// fork | vfork, we don't allow it for now.
+//			56 | 57 | 58		=> { tracee.deny(); },				// clone | fork | vfork, we don't allow it for now.
 			59 					=> { execve_request(&tracee); },	// execve
 			60 					=> { tracee.do_continue(); }		// exit, why bother preventing someone from suicide?
-//			62					=> { tracee.deny(); },				// kill, we always deny it.	
+			62					=> { tracee.deny(); },				// kill, we always deny it.	
+			// ID part
+			102 | 104			=> { tracee.do_continue(); },		// getuid | getgid
+			107 | 108			=> { tracee.do_continue(); }, 		// geteuid | getegid
+			111 | 121			=> { tracee.do_continue(); }, 		// getpgrp | getpgid
+			118 | 120			=> { tracee.do_continue(); }, 		// getresuid | getresgid
+
+
 			_ => {tracee.do_continue();},
 		}
 		// record the syscall before continue
