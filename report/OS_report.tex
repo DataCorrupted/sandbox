@@ -45,7 +45,7 @@
 % As a general rule, do not put math, special symbols or citations
 % in the abstract
 \begin{abstract}
-	How to test program, either for student homework or competition, is a tricky problem since the grading server have to protect itself from being hacked by malicious program submitted from Internet, and to protect test cases from being poached by untrusted program. 
+	How to test program, either for student homework or competition, is a tricky problem since the grading server have to protect itself from being hacked by malicious program submitted from Internet, and protect test cases from being poached by untrusted program. 
 	To be general, a safe environment is needed for user to run untrusted program where user and his data can be safe. 
 	We propose that we track every syscall the untrusted program issues, thus we can trace it's movement and status and make sure it remain trustworthy. 
 \end{abstract}
@@ -56,18 +56,17 @@
 			From grading system's point of view, student's homework or code need to be tested should be considered untrustworthy. 
 			However, in order to do the grading job, the server have to run all students programs.
 		\par
-			Currently there are many malware isolation applications, one of the most famous being lxd. 
-			We dived into lxd and realized that it's designed based on the following principles:
+			Currently there are many malware isolation applications, one of the most famous being \emph{lxd}. 
+			We dived into \emph{lxd} and realized that it's designed based on the following principles:
 		\par 
 			\emph{\textbf{
-			%% Here I need to figure out how to use cite form. TODO
 				If you can't see it, you can't destroy it. 
 				You can't tempering with things you can't see.
 			}}
 		\par
 			Good as this principle is, it causes unintended inconvenience. 
-			For example, Rust compiler have to check github.com for extern crates if it is one of the dependences of the user program. 
-			But to make sure the data is safe, in LXD, network access is either entirely banned or allowed.
+			For example, Rust compiler have to check Github.com for extern crates if it is one of the dependences of the user program. 
+			But to make sure the data is safe, in \emph{lxd}, network access is either entirely banned or allowed.
 			Such situation can be really problematic.
 		\par
 			Thus we realized we need something better to help cope with the situation. 
@@ -87,7 +86,7 @@
 			\par
 				\emph{\textbf{
 				%% TODO kind of too informal
-					If you have to ask for my permission for every syscall you make, you can't damage things because I will not allow it.
+					If you have to ask for my permission for every syscall you make, you can't damage the system because I will not allow it.
 				}}
 			\par
 				We will trace every syscall the untrusted program is issuing and decide if it's an allowance or a denial.
@@ -101,7 +100,7 @@
 				\par
 				Writing 328 different policies to deal with each syscall is is hard and laborious. Instead of doing that, because there are connections between some syscalls, like certain syscalls have to be performed before others.
 				\par
-				For example, each and every program have to \emph{ open() } a file before it can read or write it. 
+				For example, each and every program have to \emph{ open() } a file before it can \emph{read()} or \emph{write()} it. 
 				Or, \emph{ socket() } have to be established before a network connection can be possible.
 			\par
 			%% TODO kind of wired
@@ -115,7 +114,7 @@
 				When a program \emph{ fork() }, tracing program do \emph{ fork() } too, and immediately begin to trace the child just forked by the untrusted program. 
 				After these finishes, we will start both parent and child.
 			\par
-				The problem is, When a untrusted program \emph{kill()} it's child, or one of it's children \emph{kill()} another, the tracer can't tell the difference. 
+				The problem is, when a untrusted program \emph{kill()} it's child, or one of it's children \emph{kill()} another, the tracer can't tell the difference. 
 				Tracer have no way to know the \emph{pid} about to be killed is another user program or one of one of tracee's children. 
 				Tracer program have to do inter communication to know what really happened.
 			\par
@@ -140,7 +139,7 @@
 			Every time the tracer calls this function, it will be put to wait. 
 			It will wake up on two conditions: either tracee issues an syscall then OS wakes tracer up and continue doing the syscall until tracer says so by a \emph{ptrace(CONT, pid, void, void)} call or OS finished a syscall it wakes tracer up before it hands control to tracee.
 
-	\subsection{Architecture \& System choice}
+	\subsection{Choice of architecture}
 
 		\par
 			ptrace may have the ability to alter registers, it don't necessarily have the ability to know the syscall the tracee is making. 
@@ -228,38 +227,41 @@
 				If tracee tries to tank files outside /home, operating system will prevent it.
 				
 		\subsection{Network}
-		\par
-		There are different ways to limit the access of certain program to network. LXD, the Linux Containers, limit the network access by configuring the whole container, all programs in one container will either have network access or not. Taking advantage of syscall-level sandbox,  every process is separate, thus monitoring one particular  program's network connection is possible. Besides, by implementing in this way, the sandbox can allow the untrusted program only be able to connect to certain IP address.
-		\par
-		There are four syscall a client program would use to make a network connection. 
-		\begin{enumerate}
-		\item socket
 			\par
-			get a new socket
-		\item connect
+				There are different ways to limit the access of certain program to network. 
+				\emph{lxd}, the Linux Containers, limit the network access by configuring the whole container, all programs in one container will either have network access or not. 
+				Taking advantage of syscall-level sandbox, every process is separate, thus monitoring one particular program's network connection is possible. 
+				Besides, by implementing in this way, the sandbox can allow the untrusted program only be able to connect to certain IP address.
 			\par
-			connect the socket to a remote IP
-		\item receive from / send to
+				There are four syscall a client program would use to make a network connection. 
+			\begin{enumerate}
+			\item socket
+				\par
+				get a new socket.
+			\item connect
+				\par
+				connect the socket to a remote IP.
+			\item receive from / send to
+				\par
+				communicating with the remote IP though the socket.
+			\end{enumerate}
+			\par 
+				Because the connect syscall is the only syscall whose arguments contain the IP address, tracing this syscall can get the IP address, then the sandbox can decide whether this connection is allowed or not. 
 			\par
-			communicating with the remote IP though the socket
-		\end{enumerate}
-		\par 
-		Because the connect syscall is the only syscall whose arguments contain the IP address, tracing this syscall can get the IP address, then the sandbox can decide whether this connection is allowed or not. 
-		\par
-		For example, if the untrusted program is only allowed to connect to github.com, when the sandbox found the IP address which untrusted program is trying to connect to is beyond the white list, this syscall will be rejected.
-		
+				For example, if the untrusted program is only allowed to connect to Github.com, when the sandbox found the IP address which untrusted program is trying to connect to is beyond the white list, this syscall will be rejected.
+			
 
 
 \section{Rust Experience}
 	After finish this project, we now have a better feeling about Rust programming language. It's pros and cons we will list our feelings here.
 	%% TODO reconstruct this
 	\subsection{Pros}
-		\subsubsection{Yuyang Rong}
-			\par
-				I really like Trait system, it allows me to add additional method to predefined types. 
-				When doing file path parsing, I really need a new method added to String type, Trait system allows it.
-		\subsubsection{Jianxiong Cai}
-			The mutability system in Rust help a lot. In C++, variables are assumed mutable. Thus it is dangerous to return a pointer to a variable in a struct, because the user may accidentally change the variable and could easily corrupt the struct.
+		\par
+			\subsubsection{Trait system} It is really powerful, it allows me to add additional method to predefined types. 
+			When doing file path parsing, a new method need to be add to String type, Trait system allows it.
+			The mutability system in Rust help a lot. 
+			In C++, variables are assumed mutable. 
+			Thus it is dangerous to return a pointer to a variable in a struct, because the user may accidentally change the variable and could easily corrupt the struct.
 			Taking advantage of Rust, all variables are assumed immutable, thus the user can't change the variable. IN this way, struct is prevented from being corrupted by buggy program.
 	\subsection{Cons}
 		\subsubsection{Yuyang Rong}
@@ -280,7 +282,7 @@
 
 \section{Availability}
 
-	Please check github.com for our Safebox.
+	Please check Github.com for our Safebox.
 
 \section*{Acknowledgment}
 	We would like to thank Prof. Chen for his brilliant course and his guidance for our project. He provided us with such a great opportunity to do system programming and rust programming ourselves. 
