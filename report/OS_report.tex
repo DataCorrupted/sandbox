@@ -48,10 +48,10 @@
 	How to test program, either for student homework or competition, is a tricky problem since the grading server have to protect itself from being hacked by malicious program submitted from Internet, and protect test cases from being poached by untrusted program. 
 	To be general, a safe environment is needed for user to run untrusted program where user and his data can be safe. 
 	Currently, there are two ways to create such an environment. 
-	One is to use container or virtual machine to create a vritual environment to run the untrusted program. The other is to track and limit the syscall made by untrusted program. 
+	One is to use container or virtual machine to create a virtual environment to run the untrusted program, while the other is to track and limit the syscall made by untrusted program. 
 	There are pros and cons for both project.
 	In this project, we implemented a sandbox for safely running untrusted program, using the second way. 
-	Besides, we develpe a rust lib for trace syscall of another process.
+	Besides, we develpe a rust library for trace syscall of another process.
 \end{abstract}
 
 \section{Introduction}
@@ -59,29 +59,29 @@
 		\par
 			How to test a program, either for student homework or competition, is a tricky problem since the grading server have to run the program in order to grade the program under most situations. 
 			On the other hand, because the student homework or competition code is submitted from Internet, and is likely to be buggy and may damage the operating system running it. 
-			Besides that, some program may try to poke the testcases during grading and try to send it to the author.
+			Besides that, some program may try to poke the test cases during grading and try to send it to the author.
 			Therefore, the student homework or competition code should be considered as untrusted program. 
-			The operating system need to protect itself from being damaged and prevent the program from poking testcases.
+			The operating system need to protect itself from being damaged and prevent the program from poking test cases.
 		\par
 			As the result, a safe environment is needed for user to run untrusted program where user and his data can be safe. 
 \section {Motivation}
 	\subsection{Tread Model}
 		\par
-			As has mentioned before, the untrusted program may perform following operations, either intendically or accidentially to damage the system or poke testcases from grading.
+			As has mentioned before, the untrusted program may perform following operations, either intentionally or accidentally to damage the system or poke test cases from grading.
 			\begin{itemize}
-				\item {Read files not owned to the current user}
-				\item {Remove files owned by the current user, but should not be removed or changed by the program, like testcases}
+				\item {Read files not owned by the current user}
+				\item {Remove files owned by the current user, but should not be removed or changed by the program, like test cases}
 				%TODO, fill it in if there is any
-				\item {Read in testcase and send it out through Internet.}
+				\item {Read in test cases and send it out through Internet.}
 			\end{itemize}
 		\par
 			As the result, there are a few requirements for the sandbox.
 			\begin{itemize}
-				\item {Protect files not owned by the user (uid)}
-				\item {Prevent program from removing files owned by current user but should not be removed, like testcases}
+				\item {Protect files not owned by the user}
+				\item {Prevent program from removing files owned by current user but should not be removed, like test cases}
 				\item {Limited Internet access for the program}
 			\end{itemize}
-	\subsection{Current Slouations}
+	\subsection{Current Solutions}
 		% introduce the LXD and Janus paper here. TODO rewrite the following section
 		\par
 			Currently there are many mal-ware isolation applications, one of the most famous being \emph{lxd}. 
@@ -102,15 +102,15 @@
 \section {Project Contribution}
 \begin{itemize}
 	\item{Implement Janus sandbox in Rust}
-	\item{Implement the sandbox to allow untrusted program only can connect to primitted ip address}
+	\item{Implement the sandbox to allow untrusted program only can connect to permitted IP address}
 	\item{Implement a Rust lib to trace another process, based on ptrace with Rust FFI (Foreign Function Interface)}
 \end{itemize}
 \section {Design}
 	\subsection{Principles}
 		\par
-			So we came to our solution. As we have mentioned above, the LXD does not provide limited Internet access, instead, it either allow all Internet access or deny all. So we did not followed the priciple of container / virtual machine to implement the sandbox.
+			So we came to our solution. As we have mentioned above, the \emph{lxd} does not provide limited Internet access, instead, it either allow all Internet access or deny all. So we did not followed the principle of container / virtual machine to implement the sandbox.
 			\par
-			Instead, we followed the priciple of Janus sandbox, because the assumption Janus sandbox made, as mentioned above, is quite concrete.
+			Instead, we followed the principle of Janus sandbox, because the assumption Janus sandbox made, as mentioned above, is quite concrete.
 			\par
 			In general, we will trace every syscall the untrusted program is issuing and decide if it's an allowance or a denial.
 	\subsection {Alternative ways}
@@ -228,7 +228,7 @@
 			These functions do not require any arguments but pid, using \emph{ptrace()} to do that can be laborious, so we finished the interface.
 	\subsection{The framework}
 		\subsubsection{Reading configuration file}
-			Currently Safebox have 2 configuration files, the ip address and file allowed to access.
+			Currently Safebox have 2 configuration files, the IP address and file allowed to access.
 			%% Ernest goes here.
 		\subsubsection{Initialize the tracee}
 			\par

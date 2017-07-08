@@ -1,9 +1,6 @@
 extern crate libc;
 use libc::*;
 
-extern crate errno;
-use errno::*;
-
 use std::ffi::*;
 use std::default::Default;
 use std::ptr;
@@ -53,7 +50,6 @@ impl Tracee {
 					let _ = tracee.trace_me().unwrap();                     // run trace_me
 					setuid(1001);
 					let _ = execvp(c_prog.as_ptr(), c_args.as_ptr()) ;              // run execvp
-					//println!("{:?}", errno());
 					panic!("{:?}","tracer: child failed to run execvp" );
 				};
 			},
