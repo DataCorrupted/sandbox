@@ -47,15 +47,21 @@
 \begin{abstract}
 	How to test program, either for student homework or competition, is a tricky problem since the grading server have to protect itself from being hacked by malicious program submitted from Internet, and protect test cases from being poached by untrusted program. 
 	To be general, a safe environment is needed for user to run untrusted program where user and his data can be safe. 
-	Currently, there are two ways to create such an environment. One is to use container or virtual machine to create a vritual environment to run the untrusted program. The other is to track and limit the syscall made by untrusted program. There are pros and cons for both project.
-	In this project, we implemented a sandbox for safely running untrusted program, using the second way. Besides, we develpe a rust lib for trace syscall of another process.
+	Currently, there are two ways to create such an environment. 
+	One is to use container or virtual machine to create a vritual environment to run the untrusted program. The other is to track and limit the syscall made by untrusted program. 
+	There are pros and cons for both project.
+	In this project, we implemented a sandbox for safely running untrusted program, using the second way. 
+	Besides, we develpe a rust lib for trace syscall of another process.
 \end{abstract}
 
 \section{Introduction}
 	\subsection{Real life problem}
 		\par
-			How to test a program, either for student homework or competition, is a tricky problem since the grading server have to run the program in order to grade the program under most situations. On the other hand, because the student homework or competition code is submitted from Internet, and is likely to be buggy and may damage the operating system running it. Besides that, some program may try to poke the testcases during grading and try to send it to the author.
-			Therefore, the student homework or competition code should be considered as untrusted program. The operating system need to protect itself from being damaged and prevent the program from poking testcases.
+			How to test a program, either for student homework or competition, is a tricky problem since the grading server have to run the program in order to grade the program under most situations. 
+			On the other hand, because the student homework or competition code is submitted from Internet, and is likely to be buggy and may damage the operating system running it. 
+			Besides that, some program may try to poke the testcases during grading and try to send it to the author.
+			Therefore, the student homework or competition code should be considered as untrusted program. 
+			The operating system need to protect itself from being damaged and prevent the program from poking testcases.
 		\par
 			As the result, a safe environment is needed for user to run untrusted program where user and his data can be safe. 
 \section {Motivation}
@@ -279,15 +285,15 @@
 			\subsubsection{Trait system} 
 				It is really powerful, it allows us to add additional method to predefined types. 
 				When doing file path parsing, a new method need to be add to String type, Trait system allows it.
-			\subsubsecton{ Mutability system } 
+			\subsubsection{Mutability system} 
 				In C++, variables are assumed mutable. 
 				Thus it is dangerous to return a pointer to a variable in a struct, because the user may accidentally change the variable and could easily corrupt the struct.
 				Taking advantage of Rust, all variables are assumed immutable, thus the user can't change the variable. 
 				In this way, struct can't be corrupted by buggy program.
 	\subsection{Cons}
-			\par
-				Although Rust is said to be a system programming language, it still lack certain "system" interface.
-				We have to heavily rely on \emph{libc} to do the programming and have tons of \emph{unsafe}s in it, which is not that desirable. 				
+		\par
+			Although Rust is said to be a system programming language, it still lack certain "system" interface.
+			We have to heavily rely on \emph{libc} to do the programming and have tons of \emph{unsafe}s in it, which is not that desirable. 				
 
 \section{Limitations \& Future Work}
 	\subsection{File System}
