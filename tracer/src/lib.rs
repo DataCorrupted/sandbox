@@ -19,7 +19,7 @@ pub struct Tracee {
 	entry_flag : bool,				// indicate whether it is on entry or exit from a syscall
 	last_syscall: u64,
 	ip_connected: Vec<String>,
-	file_opened: Vec<String>,
+	file_deleted: Vec<String>,
 }
 
 impl Tracee {
@@ -32,7 +32,7 @@ impl Tracee {
 		let child = unsafe{ libc::fork() };
 		let tracee = Tracee{ pid: child, allow_all: all,
 							entry_flag: false, last_syscall: 1023,
-							ip_connected: Vec::new(), file_opened: Vec::new() };
+							ip_connected: Vec::new(), file_deleted: Vec::new() };
 		// if succes, child process run trace_me
 		match tracee.pid{
 			-1 => {							// failed to fork
@@ -74,7 +74,7 @@ impl Tracee {
 	pub fn from(pid: i32, all: bool) -> Result<Tracee, String>{
 		let tracee = Tracee{ pid : pid, allow_all: all,
 							entry_flag: false, last_syscall: 1023,
-							ip_connected: Vec::new(), file_opened: Vec::new() };
+							ip_connected: Vec::new(), file_deleted: Vec::new() };
 		match tracee.attach(){
 			Ok(_) => Ok(tracee),
 			Err(_) => Err("tracer: failed to attach.".to_string()), 
@@ -208,7 +208,7 @@ impl Tracee {
 				println!("hint: you were trying to connect to disallowed ip: {}", ip[ip.len()-1]);
 			},
 			2  => {
-				let file = &self.file_opened;
+				let file = &self.file_deleted;
 				println!("hint: you were trying to open file: {}", file[file.len()-1]);
 			},
 			_  => println!("hint: Did you use fork() or kill()? We don't allow it for now."),
@@ -315,8 +315,8 @@ impl Tracee {
 			println!("{}", ip);
 		}
 	}
-	pub fn print_file_opened(&self) {
-		for file in &self.file_opened {
+	pub fn print_file_deleted(&self) {
+		for file in &self.file_deleted {
 			println!("{}", file);
 		}
 	}
@@ -325,7 +325,7 @@ impl Tracee {
 		self.ip_connected.push(ip);
 	}
 	pub fn add_file(&mut self, file: String) {
-		self.file_opened.push(file);
+		self.file_deleted.push(file);
 	}
 
 	pub fn is_allow_all(&self) -> bool {
