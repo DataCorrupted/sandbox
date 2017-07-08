@@ -56,7 +56,7 @@ fn main() {
 		let mut input = String::new();
 		match io::stdin().read_line(&mut input) {
 			Err(_) => {
-				let _ = writeln!(&mut std::io::stderr(),"failed to read. terminate.");
+				let _ = writeln!(&mut std::io::stderr(),"Failed to read. Terminate.");
 				exit(0);
 			}
 			_	=> {let _ = input.pop();},
