@@ -63,9 +63,7 @@ fn main() {
 		}
 		if input != "y".to_string() && input != "Y".to_string() {
 			exit(0);
-		} else {
-			println!();
-		}
+		} 
 	}
 	// reading arguments
 	let mut start = false;
@@ -134,8 +132,7 @@ fn main() {
 			// TODO, implement the map
 			// IO / Memory part
 			0 | 1 | 3			=> { tracee.do_continue(); },		// read | write | close	
-			2					=> { open_request(
-									&mut tracee, &allowed_file);},	// open
+			2					=> { tracee.do_continue(); },		// open
 			4 | 5 | 6			=> { tracee.do_continue(); },		// stat | fstat | lstat
 //			7					=> {;},								// poll
 //			8					=> {;},								// lseek
@@ -167,10 +164,13 @@ fn main() {
 			51 | 52				=> { tracee.do_continue(); },		// getsockname | getpeername
 			53					=> { tracee.do_continue(); },		// socketpair
 			54 | 55				=> { tracee.do_continue(); },		// setsockopt | getsockopt
-			56 | 57 | 58		=> { tracee.deny(); },				// clone | fork | vfork, we don't allow it for now.
-//			59 					=> { execve_request(&tracee); },	// execve
+//			56 | 57 | 58		=> { tracee.deny(); },				// clone | fork | vfork, we don't allow it for now.
+//			59 					=> { execve_request(&tracee); },	//		 execve
 			60 					=> { tracee.do_continue(); }		// exit, why bother preventing someone from suicide?
-			62					=> { tracee.deny(); },				// kill, we always deny it.	
+			62					=> { tracee.do_continue(); },		// kill, we allow it because user system will kick in.
+			// Delete
+			87					=> { unlink_request(
+									&mut tracee, &allowed_file); }	// unlink
 			// ID part
 			102 | 104			=> { tracee.do_continue(); },		// getuid | getgid
 			107 | 108			=> { tracee.do_continue(); }, 		// geteuid | getegid
@@ -186,7 +186,7 @@ fn main() {
 		tracee.print_ip_connected();
 	}
 	if rec_fi {
-		tracee.print_file_opened();
+		tracee.print_file_deleted();
 	}
 }
 

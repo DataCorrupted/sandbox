@@ -211,7 +211,7 @@ impl Tracee {
 				let file = &self.file_deleted;
 				println!("hint: you were trying to open file: {}", file[file.len()-1]);
 			},
-			_  => println!("hint: Did you use fork() or kill()? We don't allow it for now."),
+			_  => println!("hint: Did you use fork()? We don't allow it for now."),
 		}
 		println!();
 		exit(0);

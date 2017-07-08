@@ -25,7 +25,7 @@ fn check_pos(filename: &String) -> PosEval {
 	}
 }
 
-pub fn open_request(tracee: &mut Tracee, allowed_file: &FileConf) {
+pub fn unlink_request(tracee: &mut Tracee, allowed_file: &FileConf) {
 	let filename = tracee.take_filename().unwrap().shorten();
 	tracee.add_file(filename.clone());
 	tracee.do_continue(); return;
