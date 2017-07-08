@@ -55,15 +55,14 @@
 \end{abstract}
 
 \section{Introduction}
-	\subsection{Real life problem}
-		\par
-			How to test a program, either for student homework or competition, is a tricky problem since the grading server have to run the program in order to grade the program under most situations. 
-			On the other hand, because the student homework or competition code is submitted from Internet, and is likely to be buggy and may damage the operating system running it. 
-			Besides that, some program may try to poke the test cases during grading and try to send it to the author.
-			Therefore, the student homework or competition code should be considered as untrusted program. 
-			The operating system need to protect itself from being damaged and prevent the program from poking test cases.
-		\par
-			As the result, a safe environment is needed for user to run untrusted program where user and his data can be safe. 
+	\par
+		How to test a program, either for student homework or competition, is a tricky problem since the grading server have to run the program in order to grade the program under most situations. 
+		On the other hand, because the student homework or competition code is submitted from Internet, and is likely to be buggy and may damage the operating system running it. 
+		Besides that, some program may try to poke the test cases during grading and try to send it to the author.
+		Therefore, the student homework or competition code should be considered as untrusted program. 
+		The operating system need to protect itself from being damaged and prevent the program from poking test cases.
+	\par
+		As the result, a safe environment is needed for user to run untrusted program where user and his data can be safe. 
 \section {Motivation}
 	\subsection{Tread Model}
 		\par
@@ -88,7 +87,7 @@
 			We dived into \emph{lxd} and realized that it's designed based on the following principles:
 		\par
 			\emph{\textbf{
-				An application can do little harm if its access to the underlying operating system is appropriately restricted.\cite{SecSandBox}
+				An application can do little harm if its access to the underlying operating system is appropriately restricted.\cite{goldberg1996secure}
 			}}
 		\par
 			Good as this principle is, it causes unintended inconvenience. 
@@ -113,17 +112,16 @@
 			Instead, we followed the principle of Janus sandbox, because the assumption Janus sandbox made, as mentioned above, is quite concrete.
 			\par
 			In general, we will trace every syscall the untrusted program is issuing and decide if it's an allowance or a denial.
-	\subsection {Alternative ways}
-	%TODO put all alternative ways here and examplain why it is not so good as what we finally use.
 	\subsection{Difficulties} %TODO says about the difficities for the current implement, TODO rewrite pending
-		\subsubsection{Outnumbered}
+		\subsubsection{Enormous syscalls}
 			\par
 				Nice as tracing every syscall sounds, it's hard as soon as we realized the real scale the problem is. 
 			\par 
 				The number of syscall are enormous, far beyond our expectation. 
-				For example, in x86\_64 architecture, there are in total 328 syscalls. 
+				For example, in x86\_64 architecture, there are in total 332 syscalls. 
+				%TODO how to \cite{LinuxSysCall} 
 				\par
-				Writing 328 different policies to deal with each syscall is is hard and laborious. Instead of doing that, because there are connections between some syscalls, like certain syscalls have to be performed before others.
+				Writing 332 different policies to deal with each syscall is is hard and laborious. Instead of doing that, because there are connections between some syscalls, like certain syscalls have to be performed before others.
 				\par
 				For example, each and every program have to \emph{ open() } a file before it can \emph{read()} or \emph{write()} it. 
 				Or, \emph{ socket() } have to be established before a network connection can be possible.
@@ -133,7 +131,7 @@
 				For example, we allow \emph{ close() }, \emph{ read() } directly, but we carefully examine \emph{ open() }, whether the file is allowed, what it is opened for, etc.
 			\par 
 				In this way, we narrowed our work to much fewer syscalls like \emph{open()} and \emph{connect()}.
-		\subsubsection{Killing a children}
+		\subsubsection{Killing a process}
 			\par 
 				Not much program nowadays do not do \emph{ fork() } anymore, even students' homework use this syscall here or there. 
 				When a program \emph{ fork() }, tracing program do \emph{ fork() } too, and immediately begin to trace the child just forked by the untrusted program. 
@@ -144,14 +142,18 @@
 				Tracer program have to do inter communication to know what really happened.
 			\par
 				Doing inter communication between tracers can be rather difficult can gains little, we then came up with a new solution that we change tracee's \emph{uid}, thus every tracee's child will have the same \emph{uid} and they can feel free to \emph{kill()} each other, but once they try to \emph{kill()} anyone else, operating system will stop them.
+	\subsection {Alternative approaches}
+		\subsubsection{Limited file access}
+			\par 	%TODO file config
+			\par 	%TODO why not directly File system
+			\par 	%TODO why lxd and file system & config file(unlink)
+		\subsubsection{Limited network access}
+	%TODO put all alternative ways here and examplain why it is not so good as what we finally use.
 
 
 % the actual implementation part.
 \section{Implementation}
-
-
 	\subsection{ptrace}
-
 		\par
 			Linux provides a function:\\
 				\begin{center}
@@ -163,9 +165,7 @@
 			What ptrace does is that it stops syscall and have the privilege to examine memory, registers, etc.\ the tracee is using. 
 			Every time the tracer calls this function, it will be put to wait. 
 			It will wake up on two conditions: either tracee issues an syscall then OS wakes tracer up and continue doing the syscall until tracer says so by a \emph{ptrace(CONT, pid, void, void)} call or OS finished a syscall it wakes tracer up before it hands control to tracee.
-
 	\subsection{Choice of architecture}
-
 		\par
 			ptrace may have the ability to alter registers, it don't necessarily have the ability to know the syscall the tracee is making. 
 			Different architectures store syscall number and syscall return value in different registers. 
@@ -229,7 +229,7 @@
 	\subsection{The framework}
 		\subsubsection{Reading configuration file}
 			Currently Safebox have 2 configuration files, the IP address and file allowed to access.
-			%% Ernest goes here.
+			%% TODO Ernest goes here.
 		\subsubsection{Initialize the tracee}
 			\par
 				Good thing is this have been done in our own library, all we need to do is to take command from command line and put them into a vector, give that to constructor. 
@@ -260,26 +260,24 @@
 			\par
 				There are four syscall a client program would use to make a network connection. 
 			\begin{enumerate}
-			\item socket
+			\item \emph{ socket() }
 				\par
 				get a new socket.
-			\item connect
+			\item \emph{ connect() }
 				\par
 				connect the socket to a remote IP.
-			\item receive from / send to
+			\item \emph{ recvfrom() / sendto() }
 				\par
 				communicating with the remote IP though the socket.
 			\end{enumerate}
-			\par 
+			\par 	%TODO change syscall to emph with ()
 				Because the connect syscall is the only syscall whose arguments contain the IP address, tracing this syscall can get the IP address, then the sandbox can decide whether this connection is allowed or not. 
 			\par
 				For example, if the untrusted program is only allowed to connect to Github.com, when the sandbox found the IP address which untrusted program is trying to connect to is beyond the white list, this syscall will be rejected.
 			
 
-% TODO rewrite the part (structure)
 \section{Rust Experience}
 	After finish this project, we now have a better feeling about Rust programming language. It's pros and cons we will list our feelings here.
-	%% TODO reconstruct this
 	\subsection{Pros}
 		\par
 			\subsubsection{Trait system} 
@@ -291,7 +289,7 @@
 				Taking advantage of Rust, all variables are assumed immutable, thus the user can't change the variable. 
 				In this way, struct can't be corrupted by buggy program.
 	\subsection{Cons}
-		\par
+		\par %TODO think of more cons.
 			Although Rust is said to be a system programming language, it still lack certain "system" interface.
 			We have to heavily rely on \emph{libc} to do the programming and have tons of \emph{unsafe}s in it, which is not that desirable. 				
 
