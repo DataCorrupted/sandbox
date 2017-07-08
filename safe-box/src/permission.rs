@@ -28,27 +28,13 @@ fn check_pos(filename: &String) -> PosEval {
 pub fn unlink_request(tracee: &mut Tracee, allowed_file: &FileConf) {
 	let filename = tracee.take_filename().unwrap().shorten();
 	tracee.add_file(filename.clone());
-	tracee.do_continue(); return;
+	tracee.do_continue();
 	match check_pos(&filename) {
 		PosEval::Danger => {
 			match allowed_file.is_file_allowed(&filename){
 				true	=> tracee.do_continue(),
 				false	=> tracee.deny(),
 			}	
-		},
-		PosEval::In | PosEval::Out => {
-			tracee.do_continue();	
-		},
-	};
-}
-
-pub fn execve_request(tracee: &Tracee) {
-	let registers = tracee.take_regs().unwrap();
-	let mut filename = tracee.read_string(registers.rdi).unwrap();
-	filename = filename.shorten();
-	match check_pos(&filename) {
-		PosEval::Danger => {
-			tracee.deny();
 		},
 		PosEval::In | PosEval::Out => {
 			tracee.do_continue();	
