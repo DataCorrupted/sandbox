@@ -34,8 +34,7 @@ pub fn open_request(tracee: &mut Tracee, allowed_file: &FileConf) {
 			match allowed_file.is_file_allowed(&filename){
 				true	=> tracee.do_continue(),
 				false	=> tracee.deny(),
-			}
-			
+			}	
 		},
 		PosEval::In | PosEval::Out => {
 			tracee.do_continue();	
@@ -58,9 +57,6 @@ pub fn execve_request(tracee: &Tracee) {
 }
 
 pub fn connect_request(tracee: &mut Tracee, allowed_ip: &IpConf) {
-	// let registers = tracee.take_regs().unwrap();
-	// let addrlen = registers.rdx;
-
 	let ip_str = tracee.take_ip().unwrap();
 	tracee.add_ip(ip_str.clone());
 	match allowed_ip.is_ip_allowed(&ip_str){
