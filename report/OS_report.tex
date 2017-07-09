@@ -347,6 +347,11 @@
 			If the untrusted program is a server application, the syscall it would use would use would be socket, bind, listen, and accept. 
 		\par
 			In the syscall "accept", the address of client on the other end of the connection would be provided, so it is reasonable to monitor this syscall to decide whether the connection should be allowed or not.
+	\subsection{Library}
+		\par
+			Currently we haven't publish our library \emph{tracer}, so in Cargo.toml in \emph{safe-box} we wrote path in our laptop.
+			We hope we can publish this in the future so that cargo can look it up in Github.com automatically.
+			For now, users may have to manually change the location of the library.
 
 
 \section{Availability}
