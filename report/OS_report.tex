@@ -81,7 +81,6 @@
 				\item {Limited Internet access for the program}
 			\end{itemize}
 	\subsection{Current Solutions}
-		% introduce the LXD and Janus paper here. TODO rewrite the following section
 		\subsubsection{LXD}
 			\par
 				Currently there are many mal-ware isolation applications, one of the most famous is \emph{lxd}. 
@@ -125,14 +124,13 @@
 			Instead, we followed the principle of Janus sandbox, because the assumption Janus sandbox made, as mentioned above, is quite concrete.
 			\par
 			In general, we will trace every syscall the untrusted program is issuing and decide if it's an allowance or a denial.
-	\subsection{Difficulties} %TODO says about the difficities for the current implement, TODO rewrite pending
+	\subsection{Difficulties} 
 		\subsubsection{Enormous syscalls}
 			\par
 				Nice as tracing every syscall sounds, it's hard as soon as we realized the real scale the problem is. 
 			\par 
 				The number of syscall are enormous, far beyond our expectation. 
-				For example, in x86\_64 architecture, there are in total 332 syscalls. 
-				%TODO how to \cite{LinuxSysCall} 
+				For example, in x86\_64 architecture, there are in total 332\cite{LinuxSysCall} syscalls. 
 				\par
 				Writing 332 different policies to deal with each syscall is is hard and laborious. Instead of doing that, because there are connections between some syscalls, like certain syscalls have to be performed before others, so there is a convenient way.
 				\par
@@ -333,11 +331,12 @@
 				Taking advantage of Rust, all variables are assumed immutable, thus the user can't change the variable. 
 				In this way, struct can't be corrupted by buggy program.
 	\subsection{Cons}
-		\par %TODO think of more cons.
+		\par
 			Although Rust is said to be a system programming language, it still lack certain "system" interface.
 			We have to heavily rely on \emph{libc} to do the programming and have tons of \emph{unsafe}s in it, which is not that desirable. 				
 
 \section{Limitations \& Future Work}
+	\subsection{File System}
 		\par
 			Thanks to Prof. Chen's advice, we tried to use user system in Linux to protect user's data. 
 			If the file opened doesn't belong to tracee, the system will deny it and return -1 on \emph{open()} call.
