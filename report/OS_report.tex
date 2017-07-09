@@ -45,9 +45,11 @@
 	The grading server have to protect itself from being hacked by malicious program submitted from Internet, and protect test cases from being poached by untrusted program. 
 	To be general, a safe environment is needed for user to run untrusted program where user and his data can be safe. 
 	%TODO move it to somewhere else
+	\par
 	Currently, there are two ways to create such an environment. 
 	One is to use container or virtual machine to create a virtual environment to run the untrusted program, while the other is to track and limit the syscall made by untrusted program. 
 	There are pros and cons for both project.
+	\par
 	In this project, we implemented a sandbox for safely running untrusted program, using the second way. 
 	Besides, we developed a rust library for trace syscall of another process.
 \end{abstract}
@@ -57,6 +59,7 @@
 		How to test a program, either for student homework or competition, is a tricky problem since the grading server have to run the program in order to grade the program under most situations. 
 		On the other hand, because the student homework or competition code is submitted from Internet, and is likely to be buggy and may damage the operating system running it. 
 		Besides that, some program may try to poke the test cases during grading and try to send it to the author.
+		\par
 		Therefore, the student homework or competition code should be considered as untrusted program. 
 		The operating system need to protect itself from being damaged and prevent the program from poking test cases.
 	\par
@@ -67,38 +70,51 @@
 			As has mentioned before, the untrusted program may perform following operations, either intentionally or accidentally to damage the system or poke test cases from grading.
 			\begin{itemize}
 				\item {Read files not owned by the current user}
-				\item {Remove files owned by the current user, but should not be removed or changed by the program, like test cases}
+				\item {Remove files owned (or can be accessed) by the current user, but should not be removed or changed by the program, like test cases}
 				\item {Read in test cases and send it out through Internet.}
 			\end{itemize}
 		\par
 			As the result, there are a few requirements for the sandbox.
 			\begin{itemize}
 				\item {Protect files not owned by the user}
-				\item {Prevent program from removing files owned by current user but should not be removed, like test cases}
+				\item {Prevent program from removing files can be accessed by current user through file system permission checking but should not be removed, like test cases}
 				\item {Limited Internet access for the program}
 			\end{itemize}
 	\subsection{Current Solutions}
 		% introduce the LXD and Janus paper here. TODO rewrite the following section
-		\par
-			Currently there are many mal-ware isolation applications, one of the most famous being \emph{lxd}. 
-			We dived into \emph{lxd} and realized that it's designed based on the following principles:
-		\par
-			\emph{\textbf{
-				An application can do little harm if its access to the underlying operating system is appropriately restricted.\cite{goldberg1996secure}
-			}}
-		\par
-			Good as this principle is, it causes unintended inconvenience. 
-			For example, Rust compiler have to check Github.com for extern crates if it is one of the dependences of the user program. 
-			But to make sure the data is safe, in \emph{lxd}, network access is either entirely banned or allowed.
-			Such situation can be really problematic.
+		\subsubsection{LXD}
+			\par
+				Currently there are many mal-ware isolation applications, one of the most famous is \emph{lxd}. 
+				We dived into \emph{lxd} and realized that it's designed based on the following principles:
+			\par
+				\emph{\textbf{
+					If you can't see it, you can't destroy it. 
+					You can't tempering with things you can't see.
+				}}
+
+			\par
+				Good as this principle is, it causes unintended inconvenience. 
+				For example, Rust compiler have to check Github.com for extern crates if it is one of the dependences of the user program. 
+				But to make sure the data is safe, in \emph{lxd}, network access is either entirely banned or allowed.
+				Such situation can be really problematic.
+		\subsection{Janus sandbox}
+			\par
+				Reasearchers at U.C. Berkeley create a safe environment for running helper application by monitoring every syscall it made. It follows this principle:
+				\par
+				\emph{\textbf{
+					An application can do little harm if its access to the underlying operating system is appropriately restricted.\cite{goldberg1996secure}
+				}}
+				\par
+				The pros is that it used an approach which can individually limit access of each program.
+				However, because it is a sandbox for helper application, it did not implement network access control at that time.
 		\par
 			Thus we realized we need something better to help cope with the situation. 
 			We want network, file system, etc be available without damaging user's computer or server. 
 			That's how we started our project.
 \section {Project Contribution}
 \begin{itemize}
-	\item{Implement Janus sandbox in Rust}
-	\item{Implement the sandbox to allow untrusted program only can connect to permitted IP address}
+	\item{Implement Janus sandbox in Rust with a few modification}
+	\item{Implement the sandbox to allow untrusted program only can connect to certain permitted IP address}
 	\item{Implement a Rust lib to trace another process, based on ptrace with Rust FFI (Foreign Function Interface)}
 \end{itemize}
 \section {Design}
@@ -118,13 +134,12 @@
 				For example, in x86\_64 architecture, there are in total 332 syscalls. 
 				%TODO how to \cite{LinuxSysCall} 
 				\par
-				Writing 332 different policies to deal with each syscall is is hard and laborious. Instead of doing that, because there are connections between some syscalls, like certain syscalls have to be performed before others.
+				Writing 332 different policies to deal with each syscall is is hard and laborious. Instead of doing that, because there are connections between some syscalls, like certain syscalls have to be performed before others, so there is a convenient way.
 				\par
 				For example, each and every program have to \emph{ open() } a file before it can \emph{read()} or \emph{write()} it. 
 				Or, \emph{ socket() } have to be established before a network connection can be possible.
 			\par
-			%% TODO kind of wired
-				So we decided to chock the untrusted program on those syscalls, to put pressure on where it hurts. 
+				we decided to chock the untrusted program on those syscalls, to put pressure on where it hurts. 
 				For example, we allow \emph{ close() }, \emph{ read() } directly, but we carefully examine \emph{ open() }, whether the file is allowed, what it is opened for, etc.
 			\par 
 				In this way, we narrowed our work to much fewer syscalls like \emph{open()} and \emph{connect()}.
@@ -138,6 +153,8 @@
 				Tracer have no way to know the \emph{pid} about to be killed is another user program or one of one of tracee's children. 
 				Tracer program have to do inter communication to know what really happened.
 			\par
+				%TODO the following passage need to be rewrited. Changing uid currently is not setuid(). It is automaticlly realized when put untrusted program into LXD.
+				%TODO somewhere should state that the sandbox need LXD to work with
 				Doing inter communication between tracers can be rather difficult can gains little, we then came up with a new solution that we change tracee's \emph{uid}, thus every tracee's child will have the same \emph{uid} and they can feel free to \emph{kill()} each other, but once they try to \emph{kill()} anyone else, operating system will stop them.
 	\subsection {Alternative approaches}
 		\subsubsection{Limited file access}
@@ -162,7 +179,7 @@
 	If the program to be grade is a network program which does not necessary relay on the Internet, like a web browser. One alternative way is:
 	\par
 	\begin{enumerate}
-		\item{Disable the Internet access like use a lxd container without network configuration.}
+		\item{Disable the Internet access like using a lxd container without network configuration.}
 		\item{Test the program through \emph{loopback network interface} (usually \emph{127.0.0.1})}
 	\end{enumerate}
 	\par
@@ -314,6 +331,7 @@
 			We have to heavily rely on \emph{libc} to do the programming and have tons of \emph{unsafe}s in it, which is not that desirable. 				
 
 \section{Limitations \& Future Work}
+	% TODO the following part is out-of-date, check which part still needs
 	\subsection{File System}
 		\par
 			Thanks to Prof. Chen's advice, we tried to use user system in Linux to protect user's data. 
