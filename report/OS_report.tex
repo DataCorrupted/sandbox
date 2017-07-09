@@ -153,9 +153,10 @@
 				Tracer have no way to know the \emph{pid} about to be killed is another user program or one of one of tracee's children. 
 				Tracer program have to do inter communication to know what really happened.
 			\par
-				%TODO the following passage need to be rewrited. Changing uid currently is not setuid(). It is automaticlly realized when put untrusted program into LXD.
-				%TODO somewhere should state that the sandbox need LXD to work with
 				Doing inter communication between tracers can be rather difficult can gains little, we then came up with a new solution that we change tracee's \emph{uid}, thus every tracee's child will have the same \emph{uid} and they can feel free to \emph{kill()} each other, but once they try to \emph{kill()} anyone else, operating system will stop them.
+			\par
+				We tried to use \emph{setuid()} to directly change uid, but soon we realized that it won't work since binary and outer folder doesn't belong to the new user and thus any operation will be denied by OS. 
+				The solution we have new is to use \emph{lxd} to do it for us. \emph{lxd} will change uid and thus do our job.
 	\subsection {Alternative approaches}
 		\subsubsection{Limited file access}
 			\par
@@ -166,14 +167,20 @@
 			\par 
 				Another way we considered is to directly "ask" file system to do it for us.
 				Once we changed uid of the program, it can't access because file system will not allow it.
-				However, in this way we may accidentally put too much constrain.
-				For example, Cargo have to access \emph{ /home/user/.cargo } upon running, such deed may cause yet another inconvenience.
+				However, in this way we may accidentally put too much constrain with get away.
+				For example, Cargo have to access \emph{ /home/user/.cargo } upon running, such deed may cause yet another inconvenience. 
+				However, the get away is some untrusted program that need to run under \emph{sudo}, thus file system can do nothing about it.
 			\par 	
 				Finally we decided to use \emph{lxd}(File system) and configuration file combined.
-				%TODO check the following two pars, I made some changes
-				\emph{lxd} will limit the majority of tracee's invalid file access. For example, it prevents the tracee to access files of other user. If the file only exists on host system, the tracee can not name it in the lxd. If the file is in the container but owned by other user, the file system permission checking would deny invalid access.
+				\emph{lxd} will limit the majority of tracee's invalid file access. 
+				For example, it prevents the tracee to access files of other user. 
+				If the file only exists on host system, the tracee can not name it in the lxd. 
+				If the file is in the container but owned by other user, the file system permission checking would deny invalid access.
 				\par
-				Configuration file is a a list where files can be removed or changed. It helps the user when the grading process needs some file to be in the lxd container, like running a web server locally to test a web application. And the untrusted program have to be run as root. Under that circumstance, the configuration file would help the user a lot.
+				Configuration file is a a list where files can be removed or changed. 
+				It helps the user when the grading process needs some file to be in the lxd container, like running a web server locally to test a web application. 
+				And the untrusted program have to be run as root. 
+				Under that circumstance, the configuration file would help the user a lot.
 		\par
 		\subsubsection{Limited network access}
 	If the program to be grade is a network program which does not necessary relay on the Internet, like a web browser. One alternative way is:
@@ -331,13 +338,10 @@
 			We have to heavily rely on \emph{libc} to do the programming and have tons of \emph{unsafe}s in it, which is not that desirable. 				
 
 \section{Limitations \& Future Work}
-	% TODO the following part is out-of-date, check which part still needs
-	\subsection{File System}
 		\par
 			Thanks to Prof. Chen's advice, we tried to use user system in Linux to protect user's data. 
 			If the file opened doesn't belong to tracee, the system will deny it and return -1 on \emph{open()} call.
-			However, tracer needs to be root before it can change tracee's uid, although it worked but we are still concerned. 
-			We are looking for ways to change uid without being root.
+			Now that we are hiding out safe-box inside \emph{lxd}, we would like to look for ways to create a temp user ourself and provide protection without the help of \emph{lxd}.
 	\subsection{Network}
 		\par
 			Currently, the sandbox only support untrusted program making connect as a client. 
@@ -349,7 +353,6 @@
 \section{Availability}
 
 	Please check Github.com for our Safebox.
-	%TODO add github link to here
 
 \section*{Acknowledgment}
 	We would like to thank Prof. Chen for his brilliant course and his guidance for our project. He provided us with such a great opportunity to do system programming and rust programming ourselves. 
