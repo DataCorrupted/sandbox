@@ -42,8 +42,9 @@
 % As a general rule, do not put math, special symbols or citations
 % in the abstract
 \begin{abstract}
-	How to test program, either for student homework or competition, is a tricky problem since the grading server have to protect itself from being hacked by malicious program submitted from Internet, and protect test cases from being poached by untrusted program. 
+	The grading server have to protect itself from being hacked by malicious program submitted from Internet, and protect test cases from being poached by untrusted program. 
 	To be general, a safe environment is needed for user to run untrusted program where user and his data can be safe. 
+	%TODO move it to somewhere else
 	Currently, there are two ways to create such an environment. 
 	One is to use container or virtual machine to create a virtual environment to run the untrusted program, while the other is to track and limit the syscall made by untrusted program. 
 	There are pros and cons for both project.
@@ -67,7 +68,6 @@
 			\begin{itemize}
 				\item {Read files not owned by the current user}
 				\item {Remove files owned by the current user, but should not be removed or changed by the program, like test cases}
-				%TODO, fill it in if there is any
 				\item {Read in test cases and send it out through Internet.}
 			\end{itemize}
 		\par
@@ -152,12 +152,23 @@
 				However, in this way we may accidentally put too much constrain.
 				For example, Cargo have to access \emph{ /home/user/.cargo } upon running, such deed may cause yet another inconvenience.
 			\par 	
-				Finally we decided to use \emph{lxd}(File system) and configuration file combined. 
-				\emph{lxd} will limit tracee's access, but not too much.
-				Configuration file may help user write a list where files can be removed or changed.
+				Finally we decided to use \emph{lxd}(File system) and configuration file combined.
+				%TODO check the following two pars, I made some changes
+				\emph{lxd} will limit the majority of tracee's invalid file access. For example, it prevents the tracee to access files of other user. If the file only exists on host system, the tracee can not name it in the lxd. If the file is in the container but owned by other user, the file system permission checking would deny invalid access.
+				\par
+				Configuration file is a a list where files can be removed or changed. It helps the user when the grading process needs some file to be in the lxd container, like running a web server locally to test a web application. And the untrusted program have to be run as root. Under that circumstance, the configuration file would help the user a lot.
+		\par
 		\subsubsection{Limited network access}
-	%TODO put all alternative ways here and examplain why it is not so good as what we finally use.
-
+	If the program to be grade is a network program which does not necessary relay on the Internet, like a web browser. One alternative way is:
+	\par
+	\begin{enumerate}
+		\item{Disable the Internet access like use a lxd container without network configuration.}
+		\item{Test the program through \emph{loopback network interface} (usually \emph{127.0.0.1})}
+	\end{enumerate}
+	\par
+	However, this approach for program requiring network access but not Internet access. If the program need Internet access to run, like a Rust program may have dependence on Rust Cargo, which is online, the grading system can not do its grading job in the approach.
+	\par
+	As the result, in our design, the sandbox give limited network access to the untrusted program by monitoring the destination ip address of every network connection.
 
 % the actual implementation part.
 \section{Implementation}
@@ -237,7 +248,8 @@
 	\subsection{The framework}
 		\subsubsection{Reading configuration file}
 			Currently Safebox have 2 configuration files, the IP address and file allowed to access.
-			%% TODO Ernest goes here.
+			\par
+			When the sandbox is launched, it would read in the two configuration file and stores it in vectors. After that, each time the untrusted program perform file access or network connection (not in \emph{allow all} mode), it would check if the file location / target ip address is permitted.
 		\subsubsection{Initialize the tracee}
 			\par
 				Good thing is this have been done in our own library, all we need to do is to take command from command line and put them into a vector, give that to constructor. 
