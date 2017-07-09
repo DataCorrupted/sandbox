@@ -11,9 +11,6 @@
 
 
 
-% correct bad hyphenation here
-\hyphenation{op-tical net-works semi-conduc-tor}
-
 \begin{document}
 \title{
 	OS Course Project: Safebox\\ 
@@ -51,7 +48,7 @@
 	One is to use container or virtual machine to create a virtual environment to run the untrusted program, while the other is to track and limit the syscall made by untrusted program. 
 	There are pros and cons for both project.
 	In this project, we implemented a sandbox for safely running untrusted program, using the second way. 
-	Besides, we develpe a rust library for trace syscall of another process.
+	Besides, we developed a rust library for trace syscall of another process.
 \end{abstract}
 
 \section{Introduction}
@@ -144,9 +141,20 @@
 				Doing inter communication between tracers can be rather difficult can gains little, we then came up with a new solution that we change tracee's \emph{uid}, thus every tracee's child will have the same \emph{uid} and they can feel free to \emph{kill()} each other, but once they try to \emph{kill()} anyone else, operating system will stop them.
 	\subsection {Alternative approaches}
 		\subsubsection{Limited file access}
-			\par 	%TODO file config
-			\par 	%TODO why not directly File system
-			\par 	%TODO why lxd and file system & config file(unlink)
+			\par
+				The first thing came into our mind that can be used for file access limitation is to write a configuration file.
+				In this file we specifically state what file is allowed and what is not.
+				This is easy to implement, but hard for users to use. 
+				After we run a few tests we realized that binaries usually need dynamic linked libraries and it's hard for user to list all of them.
+			\par 
+				Another way we considered is to directly "ask" file system to do it for us.
+				Once we changed uid of the program, it can't access because file system will not allow it.
+				However, in this way we may accidentally put too much constrain.
+				For example, Cargo have to access \emph{ /home/user/.cargo } upon running, such deed may cause yet another inconvenience.
+			\par 	
+				Finally we decided to use \emph{lxd}(File system) and configuration file combined. 
+				\emph{lxd} will limit tracee's access, but not too much.
+				Configuration file may help user write a list where files can be removed or changed.
 		\subsubsection{Limited network access}
 	%TODO put all alternative ways here and examplain why it is not so good as what we finally use.
 
@@ -270,7 +278,7 @@
 				\par
 				communicating with the remote IP though the socket.
 			\end{enumerate}
-			\par 	%TODO change syscall to emph with ()
+			\par 
 				Because the connect syscall is the only syscall whose arguments contain the IP address, tracing this syscall can get the IP address, then the sandbox can decide whether this connection is allowed or not. 
 			\par
 				For example, if the untrusted program is only allowed to connect to Github.com, when the sandbox found the IP address which untrusted program is trying to connect to is beyond the white list, this syscall will be rejected.
@@ -316,7 +324,6 @@
 \section*{Acknowledgment}
 	We would like to thank Prof. Chen for his brilliant course and his guidance for our project. He provided us with such a great opportunity to do system programming and rust programming ourselves. 
 
-%TODO cite papers and websites if necessary
 \bibliographystyle{IEEEtran}
 \bibliography{OS_cite}
 
